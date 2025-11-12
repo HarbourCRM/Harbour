@@ -293,12 +293,13 @@ def search():
         'postcode': "s.postcode",
         'email': "s.email",
         'phone': "s.phone",
-        'client_name': "c.business_name"
+        'client_name': "c.business_name",
+        'client_code': "c.id"
     }
     col = field_map.get(field, "s.debtor_first")
 
     sql = f"""
-        SELECT s.id as case_id, c.business_name, 
+        SELECT s.id as case_id, c.business_name, c.id as client_code,
                s.debtor_first, s.debtor_last, s.debtor_business_name,
                s.postcode, s.email, s.phone
         FROM cases s
@@ -314,6 +315,7 @@ def search():
     return jsonify([{
         'case_id': r['case_id'],
         'client': r['business_name'],
+        'client_code': r['client_code'],
         'debtor': r['debtor_business_name'] or f"{r['debtor_first']} {r['debtor_last']}",
         'postcode': r['postcode'] or '',
         'email': r['email'] or '',
