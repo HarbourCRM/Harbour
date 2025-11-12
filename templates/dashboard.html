@@ -4,7 +4,7 @@
   <title>Debt CRM</title>
   <style>
     body { margin:0; font-family: Arial; background: #f9f9f9; }
-    .header { height: 80px; background: rgb(91, 103, 112); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .header { height: 80px; background: rgb(91, 103, 112); display: flex; align-items: center; justify-content: space-between; padding: 0 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     .header img { height: 60px; }
     .header .btn-group { display: flex; gap: 10px; }
     .btn { background: rgb(227,82,5); color: white; border: none; padding: 8px 14px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.9em; }
@@ -72,7 +72,7 @@
 
         <!-- SELECT ANOTHER CASE FOR THIS CLIENT -->
         <select onchange="location = '?case_id=' + this.value;" style="width:100%; padding:8px; margin-top:10px;">
-          <option value="">-- Select Another Case for This Client --</option>
+          <option value="">Select another case for this client</option>
           {% for cc in client_cases %}
             <option value="{{ cc.id }}" {% if selected_case.id == cc.id %}selected{% endif %}>
               {{ cc.debtor_business_name or cc.debtor_first + ' ' + cc.debtor_last }}
@@ -93,6 +93,7 @@
             <option value="email">Email</option>
             <option value="phone">Phone</option>
             <option value="client_name">Client Name</option>
+            <option value="client_code">Client Code</option>
           </select>
           <input type="text" id="searchInput" placeholder="Type to search..." autocomplete="off">
         </div>
@@ -237,12 +238,13 @@
         fetch(`/search?q=${encodeURIComponent(q)}&field=${field}`)
           .then(r => r.json())
           .then(results => {
-            let html = '<table><tr><th>Client</th><th>Debtor</th><th>Postcode</th><th>Email</th><th>Phone</th></tr>';
+            let html = '<table><tr><th>Client Code</th><th>Client</th><th>Debtor</th><th>Postcode</th><th>Email</th><th>Phone</th></tr>';
             if (results.length === 0) {
-              html += '<tr><td colspan="5" class="no-results">No cases found</td></tr>';
+              html += '<tr><td colspan="6" class="no-results">No cases found</td></tr>';
             } else {
               results.forEach(r => {
                 html += `<tr class="result-row" onclick="location='?case_id=${r.case_id}'">
+                  <td>${r.client_code}</td>
                   <td>${r.client}</td>
                   <td>${r.debtor}</td>
                   <td>${r.postcode}</td>
