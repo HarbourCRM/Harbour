@@ -4,27 +4,10 @@
   <title>Debt CRM</title>
   <style>
     body { margin:0; font-family: Arial; background: #f9f9f9; }
-    .header {
-      height: 80px;
-      background: rgb(91, 103, 112);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 20px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
+    .header { height: 80px; background: rgb(91, 103, 112); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     .header img { height: 60px; }
     .header .btn-group { display: flex; gap: 10px; }
-    .btn {
-      background: rgb(227,82,5);
-      color: white;
-      border: none;
-      padding: 8px 14px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 0.9em;
-    }
+    .btn { background: rgb(227,82,5); color: white; border: none; padding: 8px 14px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.9em; }
     .container { display: flex; height: calc(100vh - 80px); }
     .left { width: 66%; display: flex; flex-direction: column; }
     .right { width: 34%; background: #fff; border-left: 1px solid #ddd; padding: 15px; }
@@ -33,16 +16,18 @@
     table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
     th, td { padding: 8px; text-align: left; border-bottom: 1px solid #eee; }
     th { background: #f5f5f5; }
+    .search-bar { display: flex; gap: 8px; margin-bottom: 10px; }
+    .search-bar select, .search-bar input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+    .result-row { cursor: pointer; }
+    .result-row:hover { background: #f0f0f0; }
+    .no-results { color: #777; font-style: italic; }
     .totals { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
     .total-box { background: #eef; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; }
     .balance { font-weight: bold; font-size: 1.2em; color: #d00; margin-top: 15px; }
-    select, input, textarea { padding: 7px; margin: 4px 0; border: 1px solid #ccc; border-radius: 4px; }
     .form-inline { display: grid; grid-template-columns: 110px 1fr auto; gap: 8px; align-items: start; margin-top: 10px; }
     .form-inline button { align-self: end; }
     .note-text-cell { width: 65%; }
     .note-meta { font-size: 0.8em; color: #555; }
-
-    /* MODAL */
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
     .modal.active { display: flex; }
     .modal-content { background: white; padding: 20px; border-radius: 8px; width: 480px; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
@@ -56,7 +41,7 @@
 </head>
 <body>
 
-  <!-- COMPACT HEADER -->
+  <!-- HEADER -->
   <div class="header">
     <img src="/static/helm-logo.png" alt="Helm">
     <div class="btn-group">
@@ -69,8 +54,8 @@
   <div class="container">
     <div class="left">
 
-      <!-- CASE SELECTOR -->
-      <div class="section half">
+      <!-- CASE SELECTOR (always) -->
+      <div class="section" style="padding-bottom:0;">
         <h3>Select Case</h3>
         <select onchange="location = '?case_id=' + this.value;" style="width:100%; padding:8px;">
           <option value="">-- Select Case --</option>
@@ -80,22 +65,34 @@
             </option>
           {% endfor %}
         </select>
-
-        {% if selected_case and case_client %}
-          <div style="margin-top:12px; font-size:0.95em;">
-            <strong>Client:</strong> {{ case_client.business_name }}<br>
-            {{ case_client.contact_first }} {{ case_client.contact_last }} | {{ case_client.email }}<br>
-            <strong>Debtor:</strong> {{ selected_case.debtor_business_name or selected_case.debtor_first + ' ' + selected_case.debtor_last }}<br>
-            Status: {{ selected_case.status }} {% if selected_case.substatus %}({{ selected_case.substatus }}){% endif %}
-          </div>
-        {% endif %}
       </div>
 
-      <!-- NOTES -->
+      <!-- NO CASE: SEARCH MODE -->
+      {% if not selected_case %}
+      <div class="section half">
+        <h3>Search Cases</h3>
+        <div class="search-bar">
+          <select id="searchField">
+            <option value="debtor_name">Debtor Name</option>
+            <option value="postcode">Postcode</option>
+            <option value="email">Email</option>
+            <option value="phone">Phone</option>
+            <option value="client_name">Client Name</option>
+          </select>
+          <input type="text" id="searchInput" placeholder="Type to search..." autocomplete="off">
+        </div>
+        <div id="searchResults"></div>
+      </div>
+
+      <div class="section half">
+        <p style="color:#777; font-style:italic;">Select a case above or search to begin.</p>
+      </div>
+
+      {% else %}
+
+      <!-- CASE SELECTED: NOTES -->
       <div class="section half">
         <h3>Notes</h3>
-
-        {% if selected_case %}
         <form action="/add_note" method="post" class="form-inline">
           <input type="hidden" name="case_id" value="{{ selected_case.id }}">
           <select name="type">
@@ -107,7 +104,6 @@
           <textarea name="note" placeholder="Enter note..." required style="height:60px;"></textarea>
           <button type="submit" class="btn">Add</button>
         </form>
-        {% endif %}
 
         <table style="margin-top:12px;">
           <tr><th>Date</th><th>Type</th><th class="note-text-cell">Note</th><th>User</th></tr>
@@ -123,9 +119,19 @@
           {% endfor %}
         </table>
       </div>
+
+      <!-- CASE DETAILS -->
+      <div class="section half">
+        <strong>Client:</strong> {{ case_client.business_name }}<br>
+        {{ case_client.contact_first }} {{ case_client.contact_last }} | {{ case_client.email }}<br>
+        <strong>Debtor:</strong> {{ selected_case.debtor_business_name or selected_case.debtor_first + ' ' + selected_case.debtor_last }}<br>
+        Status: {{ selected_case.status }} {% if selected_case.substatus %}({{ selected_case.substatus }}){% endif %}
+      </div>
+
+      {% endif %}
     </div>
 
-    <!-- RIGHT -->
+    <!-- RIGHT PANEL -->
     <div class="right">
       <h3>Transactions</h3>
 
@@ -142,7 +148,6 @@
         <input name="note" placeholder="Note" style="flex:1;">
         <button type="submit" class="btn">Add</button>
       </form>
-      {% endif %}
 
       <table>
         <tr><th>Date</th><th>Type</th><th>Amount</th><th>User</th></tr>
@@ -162,21 +167,19 @@
       <div class="balance">
         Balance: £{{ "%.2f"|format(balance) }}
       </div>
+      {% else %}
+      <p style="color:#777; font-style:italic; text-align:center; margin-top:50px;">Select a case to view transactions</p>
+      {% endif %}
     </div>
   </div>
 
-  <!-- MODALS -->
+  <!-- MODALS (unchanged) -->
   <div id="clientModal" class="modal">
     <div class="modal-content">
       <span class="close" onclick="closeModal('clientModal')">×</span>
       <h3>Add Client</h3>
       <form action="/add_client" method="post">
-        <select name="business_type" required>
-          <option>Limited</option>
-          <option>Partnership</option>
-          <option>Sole Trader</option>
-          <option>Individual</option>
-        </select>
+        <select name="business_type" required><option>Limited</option><option>Partnership</option><option>Sole Trader</option><option>Individual</option></select>
         <input name="business_name" placeholder="Business Name" required>
         <input name="contact_first" placeholder="Contact First">
         <input name="contact_last" placeholder="Contact Last">
@@ -200,12 +203,7 @@
             <option value="{{ client.id }}">{{ client.business_name }}</option>
           {% endfor %}
         </select>
-        <select name="debtor_business_type">
-          <option>Limited</option>
-          <option>Partnership</option>
-          <option>Sole Trader</option>
-          <option>Individual</option>
-        </select>
+        <select name="debtor_business_type"><option>Limited</option><option>Partnership</option><option>Sole Trader</option><option>Individual</option></select>
         <input name="debtor_business_name" placeholder="Debtor Business">
         <input name="debtor_first" placeholder="Debtor First">
         <input name="debtor_last" placeholder="Debtor Last">
@@ -220,6 +218,38 @@
     function openModal(id) { document.getElementById(id).classList.add('active'); }
     function closeModal(id) { document.getElementById(id).classList.remove('active'); }
     window.onclick = e => { if (e.target.classList.contains('modal')) e.target.classList.remove('active'); }
+
+    // Live search
+    let timeout;
+    document.getElementById('searchInput').addEventListener('input', () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        const q = document.getElementById('searchInput').value.trim();
+        const field = document.getElementById('searchField').value;
+        if (q.length < 2) { document.getElementById('searchResults').innerHTML = ''; return; }
+
+        fetch(`/search?q=${encodeURIComponent(q)}&field=${field}`)
+          .then(r => r.json())
+          .then(results => {
+            let html = '<table><tr><th>Client</th><th>Debtor</th><th>Postcode</th><th>Email</th><th>Phone</th></tr>';
+            if (results.length === 0) {
+              html += '<tr><td colspan="5" class="no-results">No cases found</td></tr>';
+            } else {
+              results.forEach(r => {
+                html += `<tr class="result-row" onclick="location='?case_id=${r.case_id}'">
+                  <td>${r.client}</td>
+                  <td>${r.debtor}</td>
+                  <td>${r.postcode}</td>
+                  <td>${r.email}</td>
+                  <td>${r.phone}</td>
+                </tr>`;
+              });
+            }
+            html += '</table>';
+            document.getElementById('searchResults').innerHTML = html;
+          });
+      }, 300);
+    });
   </script>
 </body>
 </html>
