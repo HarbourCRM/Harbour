@@ -250,7 +250,7 @@ def add_case():
     ''', (
         client_id, data['debtor_business_type'], data.get('debtor_business_name'),
         data.get('debtor_first'), data.get('debtor_last'), data.get('phone'), data.get('email'),
-        data.get('street'), data.get('street2'), data.get('city'), data.get('postcode'), data.get('country'),
+        data.get('street'), data.get('street2'), data.get('city ⊆'), data.get('postcode'), data.get('country'),
         data.get('status', 'Open'), data.get('substatus'), data.get('custom1'), data.get('custom2'), data.get('custom3'), interest_rate
     ))
     db.commit()
@@ -321,7 +321,7 @@ def search():
     """
     c.execute(sql, (param,))
     results = c.fetchall()
-    db.close()
+    db.close
 
     return jsonify([{
         'case_id': r['case_id'],
@@ -440,29 +440,35 @@ def export_excel():
     ws.title = "Client Report"
 
     # Header
-    ws.append(['Case ID', 'Debtor', 'Invoice', 'Payment', 'Charge', 'Interest', 'Balance'])
-    header = ws[1]
-    for cell in header:
+    headers = ['Case ID', 'Debtor', 'Invoice', 'Payment', 'Charge', 'Interest', 'Balance']
+    ws.append(headers)
+    for cell in ws[1]:
         cell.font = Font(bold=True)
         cell.alignment = Alignment(horizontal='center')
 
-    # Data
+    # Data + Totals
     grand = {'Invoice': 0, 'Payment': 0, 'Charge': 0, 'Interest': 0}
     for case_id, d in cases.items():
         balance = d['Invoice'] + d['Charge'] + d['Interest'] - d['Payment']
-        ws.append([case_id, d['debtor'], d['Invoice'], d['Payment'], d['Charge'], d['Interest'], balance])
+        row = [case_id, d['debtor'], d['Invoice'], d['Payment'], d['Charge'], d['Interest'], balance]
+        ws.append(row)
         for t in ['Invoice', 'Payment', 'Charge', 'Interest']:
             grand[t] += d[t]
 
-    # Totals
+    # Grand Total
     grand_balance = grand['Invoice'] + grand['Charge'] + grand['Interest'] - grand['Payment']
     total_row = ['TOTALS', '', grand['Invoice'], grand['Payment'], grand['Charge'], grand['Interest'], grand_balance]
     ws.append(total_row)
-    for i, val in enumerate(total_row):
-        if i > 1:
-            ws.cell(row=ws.max_row, column=i+1).number_format = '#,##0.00'
+    total_row_cells = ws[ws.max_row]
+    for cell in total_row_cells:
+        cell.font = Font(bold=True)
 
-    # Format
+    # Format numbers with commas
+    for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=3, max_col=7):
+        for cell in row:
+            cell.number_format = '#,##0.00'
+
+    # Borders
     thin = Side(border_style="thin")
     for row in ws.iter_rows(min_row=1, max_row=ws.max_row):
         for cell in row:
@@ -596,6 +602,9 @@ def dashboard():
                 else:
                     balance += amt
 
+    # Format balance with commas
+    balance_str = f"£{balance:,.2f}"
+
     return render_template('dashboard.html',
                            clients=clients,
                            all_cases=all_cases,
@@ -604,7 +613,7 @@ def dashboard():
                            client_cases=client_cases,
                            notes=notes,
                            transactions=transactions,
-                           balance=balance,
+                           balance=balance_str,
                            totals=totals)
 
 @app.route('/login', methods=['GET', 'POST'])
