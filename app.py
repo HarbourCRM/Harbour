@@ -284,6 +284,10 @@ def add_note():
 def search():
     query = request.args.get('q', '').strip()
     field = request.args.get('field', 'debtor_first').strip()
+    mode = request.args.get('mode', 'contains')  # 'is' or 'contains'
+
+    if not query:
+        return jsonify([])
 
     db = get_db()
     c = db.cursor()
@@ -298,17 +302,20 @@ def search():
     }
     col = field_map.get(field, "s.debtor_first")
 
+    operator = '=' if mode == 'is' else 'LIKE'
+    param = query if mode == 'is' else f'%{query}%'
+
     sql = f"""
         SELECT s.id as case_id, c.business_name, c.id as client_code,
                s.debtor_first, s.debtor_last, s.debtor_business_name,
                s.postcode, s.email, s.phone
         FROM cases s
         JOIN clients c ON s.client_id = c.id
-        WHERE {col} LIKE ?
+        WHERE {col} {operator} ?
         ORDER BY c.business_name, s.id
-        LIMIT 20
+        LIMIT 50
     """
-    c.execute(sql, (f'%{query}%',))
+    c.execute(sql, (param,))
     results = c.fetchall()
     db.close()
 
@@ -404,3 +411,4 @@ def login():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
