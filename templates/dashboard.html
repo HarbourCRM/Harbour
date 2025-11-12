@@ -16,6 +16,7 @@
     .total-box { background: #eef; padding: 10px; border-radius: 5px; text-align: center; }
     .balance { font-weight: bold; font-size: 1.2em; color: #d00; }
     a { color: #007bff; text-decoration: none; }
+    select { width: 100%; padding: 10px; margin-bottom: 10px; }
   </style>
 </head>
 <body>
@@ -24,25 +25,22 @@
     <div class="left">
       <!-- Client & Case Details (Top) -->
       <div class="section half">
-        <h3>Clients</h3>
-        <select onchange="location = '?case_id=' + this.value">
+        <h3>Select Case</h3>
+        <select onchange="if(this.value) location = '?case_id=' + this.value; else location = '/';">
           <option value="">Select Case...</option>
-          {% for client in clients %}
-            {% set client_cases = [] %}
-            {% for case in g.cases if case.client_id == client.id %}{% set _ = client_cases.append(case) %}{% endfor %}
-            {% for case in client_cases %}
-              <option value="{{ case.id }}" {% if selected_case and selected_case.id == case.id %}selected{% endif %}>
-                [{{ client.business_name }}] {{ case.debtor_business_name or case.debtor_first + ' ' + case.debtor_last }}
-              </option>
-            {% endfor %}
+          {% for case in all_cases if case.case_id %}
+            <option value="{{ case.case_id }}" {% if selected_case and selected_case.id == case.case_id %}selected{% endif %}>
+              [{{ case.business_name }}] {{ case.debtor_business_name or (case.debtor_first + ' ' + case.debtor_last) if case.debtor_first else '' }}
+            </option>
           {% endfor %}
         </select>
 
         {% if selected_case and case_client %}
-          <h4>Client: {{ case_client.business_name }}</h4>
-          <p>{{ case_client.contact_first }} {{ case_client.contact_last }} | {{ case_client.email }}</p>
+          <h4>Client: {{ case_client.business_name }} ({{ case_client.business_type }})</h4>
+          <p>Contact: {{ case_client.contact_first }} {{ case_client.contact_last }} | {{ case_client.phone }} | {{ case_client.email }}</p>
           <h4>Debtor: {{ selected_case.debtor_business_name or selected_case.debtor_first + ' ' + selected_case.debtor_last }}</h4>
-          <p>Status: {{ selected_case.status }} {% if selected_case.substatus %}({{ selected_case.substatus }}){% endif %}</p>
+          <p>Type: {{ selected_case.debtor_business_type }} | Status: {{ selected_case.status }} {% if selected_case.substatus %}({{ selected_case.substatus }}){% endif %}</p>
+          <p>Open: {{ selected_case.open_date }} | Rate: {{ selected_case.interest_rate }}%</p>
         {% endif %}
       </div>
 
@@ -53,7 +51,7 @@
           <tr><th>Date</th><th>Type</th><th>User</th><th>Note</th></tr>
           {% for note in notes %}
             <tr>
-              <td>{{ note.created_at[:10] }}</td>
+              <td>{{ note.created_at[:16] }}</td>
               <td>{{ note.type }}</td>
               <td>{{ note.username }}</td>
               <td>{{ note.note }}</td>
@@ -69,23 +67,24 @@
     <div class="right">
       <h3>Transactions</h3>
       <table>
-        <tr><th>Date</th><th>Type</th><th>Amount</th><th>User</th></tr>
+        <tr><th>Date</th><th>Type</th><th>Amount</th><th>User</th><th>Note</th></tr>
         {% for t in transactions %}
           <tr>
             <td>{{ t.transaction_date }}</td>
             <td>{{ t.type }}</td>
             <td>£{{ "%.2f"|format(t.amount) }}</td>
             <td>{{ t.username }}</td>
+            <td>{{ t.note or '' }}</td>
           </tr>
         {% else %}
-          <tr><td colspan="4">No transactions</td></tr>
+          <tr><td colspan="5">No transactions</td></tr>
         {% endfor %}
       </table>
 
       <div class="totals">
-        {% for type, amt in totals.items() %}
+        {% for typ, amt in totals.items() if amt != 0 %}
           <div class="total-box">
-            <strong>{{ type }}</strong><br>
+            <strong>{{ typ }}</strong><br>
             £{{ "%.2f"|format(amt) }}
           </div>
         {% endfor %}
