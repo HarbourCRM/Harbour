@@ -153,7 +153,6 @@ def init_db():
                 ''', cl)
                 client_ids.append(c.lastrowid)
 
-            # 5 cases per client
             debtor_types = ["Individual", "Sole Trader", "Limited", "Partnership"]
             statuses = ["Open", "On Hold", "Closed"]
             for client_id in client_ids:
@@ -177,7 +176,6 @@ def init_db():
                     ))
                     case_id = c.lastrowid
 
-                    # 3-7 transactions per case
                     for _ in range(random.randint(3,7)):
                         typ = random.choice(["Invoice", "Payment", "Charge", "Interest"])
                         amount = round(random.uniform(50, 1500), 2)
@@ -188,7 +186,6 @@ def init_db():
                             VALUES (?, ?, ?, ?, ?, ?)
                         ''', (case_id, typ, amount, 1, tx_date, f"{typ} entry" if random.random() > 0.5 else None))
 
-                    # 2-5 notes per case
                     for _ in range(random.randint(2,5)):
                         note_type = random.choice(["General", "Inbound Call", "Outbound Call", "Dispute"])
                         note_text = random.choice([
@@ -212,7 +209,7 @@ def init_db():
 def before_request():
     init_db()
 
-# === FORMS (same as before) ===
+# === FORMS ===
 @app.route('/add_client', methods=['POST'])
 @login_required
 def add_client():
@@ -345,6 +342,7 @@ def dashboard():
 
     selected_case = None
     case_client = None
+    client_cases = []
     notes = []
     transactions = []
     balance = 0.0
@@ -357,6 +355,9 @@ def dashboard():
         if selected_case:
             c.execute("SELECT * FROM clients WHERE id = ?", (selected_case['client_id'],))
             case_client = c.fetchone()
+
+            c.execute("SELECT id, debtor_business_name, debtor_first, debtor_last FROM cases WHERE client_id = ? ORDER BY id", (selected_case['client_id'],))
+            client_cases = c.fetchall()
 
             c.execute('SELECT n.*, u.username FROM notes n JOIN users u ON n.created_by = u.id WHERE n.case_id = ? ORDER BY n.created_at DESC', (case_id,))
             notes = c.fetchall()
@@ -378,6 +379,7 @@ def dashboard():
                            all_cases=all_cases,
                            selected_case=selected_case,
                            case_client=case_client,
+                           client_cases=client_cases,
                            notes=notes,
                            transactions=transactions,
                            balance=balance,
