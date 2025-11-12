@@ -14,6 +14,7 @@
     .right { width: 34%; background: #fff; border-left: 1px solid #ddd; padding: 15px; display: flex; flex-direction: column; }
     .info-box { background: #eef5ff; padding: 18px; border-radius: 8px; margin: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
     .info-box p { margin: 4px 0; }
+    .info-box .id-line { font-size: 0.9em; color: #555; font-weight: normal; }
     .section { padding: 15px; border-bottom: 1px solid #eee; flex: 1; display: flex; flex-direction: column; }
     table { width: 100%; border-collapse: collapse; }
     th, td { padding: 4px 8px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
@@ -30,7 +31,7 @@
     .no-results { color: #777; font-style: italic; padding: 10px 0; }
     .totals { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
     .total-box { background: #eef; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; }
-    .balance { font-weight: bold; font-size: 1.2em; color: #d00; margin-top: 15px; }
+    .balance { font-weight: bold; font-size: 1.2em; color: #000; margin-top: 15px; text-align: center; }
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
     .modal.active { display: flex; }
     .modal-content { background: white; padding: 20px; border-radius: 8px; width: 480px; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
@@ -87,17 +88,17 @@
 </head>
 <body>
 
-<!-- HEADER -->
-<div class="header">
-  <img src="/static/helm-logo.png" alt="Helm">
-  <div class="btn-group">
-    <button class="btn" onclick="location.href='/'">Home</button>
-    <button class="btn" onclick="openModal('clientModal')">+ Add Client</button>
-    <button class="btn" onclick="openModal('caseModal')">+ Add Case</button>
-    <button class="btn" onclick="location.href='/report'">Reports</button>
+  <!-- HEADER -->
+  <div class="header">
+    <img src="/static/helm-logo.png" alt="Helm">
+    <div class="btn-group">
+      <button class="btn" onclick="location.href='/'">Home</button>
+      <button class="btn" onclick="openModal('clientModal')">+ Add Client</button>
+      <button class="btn" onclick="openModal('caseModal')">+ Add Case</button>
+      <button class="btn" onclick="location.href='/report'">Reports</button>
+    </div>
+    <img src="/static/redwood-logo.png" alt="Redwood">
   </div>
-  <img src="/static/redwood-logo.png" alt="Redwood">
-</div>
 
   <div class="container">
     <div class="left">
@@ -105,7 +106,8 @@
       <!-- CLIENT / DEBTOR INFO (TOP LEFT) -->
       {% if selected_case and case_client %}
       <div class="info-box">
-        <h3>Client: {{ case_client.business_name }} (ID: {{ case_client.id }})</h3>
+        <h3>Client: {{ case_client.business_name }}</h3>
+        <p class="id-line">ID: {{ case_client.id }}</p>
         <p><strong>Contact:</strong> 
           {{ case_client.contact_first }} {{ case_client.contact_last }} | 
           <a href="tel:{{ case_client.phone }}">{{ case_client.phone }}</a> | 
@@ -113,14 +115,19 @@
         </p>
         <p><strong>BACS:</strong> {{ case_client.bacs_details or '—' }}</p>
         <hr>
-        <h3>Debtor: {{ selected_case.debtor_business_name or selected_case.debtor_first + ' ' + selected_case.debtor_last }} (ID: {{ selected_case.id }})</h3>
+        <h3>Debtor: {{ selected_case.debtor_business_name or selected_case.debtor_first + ' ' + selected_case.debtor_last }}</h3>
+        <p class="id-line">ID: {{ selected_case.id }}</p>
         <p><strong>Type:</strong> {{ selected_case.debtor_business_type }}</p>
         <p><strong>Contact:</strong> 
           {{ selected_case.debtor_first }} {{ selected_case.debtor_last }} | 
           <a href="tel:{{ selected_case.phone }}">{{ selected_case.phone }}</a> | 
           <a href="mailto:{{ selected_case.email }}">{{ selected_case.email }}</a>
         </p>
-        <p><strong>Status:</strong> {{ selected_case.status }} {% if selected_case.substatus %}({{ selected_case.substatus }}){% endif %}</p>
+        <hr>
+        <p><strong>Status:</strong> {{ selected_case.status }}</p>
+        {% if selected_case.substatus %}
+        <p><strong>Substatus:</strong> {{ selected_case.substatus }}</p>
+        {% endif %}
         <p><strong>Open Date:</strong> {{ selected_case.open_date }}</p>
 
         <!-- TEXT + DROPDOWN -->
@@ -226,16 +233,17 @@
 
       <div style="flex:1; overflow-y:auto;">
         <table>
-          <tr><th class="trans-date">Date</th><th class="trans-type">Type</th><th class="trans-amount">Amount</th><th class="trans-user">User</th></tr>
+          <tr><th class="trans-date">Date</th><th class="trans-type">Type</th><th class="trans-amount">Amount</th><th class="trans-note">Note</th><th class="trans-user">User</th></tr>
           {% for t in transactions %}
             <tr>
               <td class="trans-date">{{ t.transaction_date }}</td>
               <td class="trans-type">{{ t.type }}</td>
               <td class="trans-amount">£{{ "%.2f"|format(t.amount) }}</td>
+              <td class="trans-note">{{ t.note or '' }}</td>
               <td class="trans-user">{{ t.username }}</td>
             </tr>
           {% else %}
-            <tr><td colspan="4">No transactions</td></tr>
+            <tr><td colspan="5">No transactions</td></tr>
           {% endfor %}
         </table>
       </div>
@@ -246,9 +254,9 @@
         {% endfor %}
       </div>
 
-<div class="balance">
-    Balance: {{ balance }}
-</div>
+      <div class="balance">
+        Balance: {{ balance }}
+      </div>
       {% else %}
       <p style="color:#777; font-style:italic; text-align:center; margin-top:50px;">Select a case to view transactions</p>
       {% endif %}
@@ -367,5 +375,3 @@
   </script>
 </body>
 </html>
-
-
