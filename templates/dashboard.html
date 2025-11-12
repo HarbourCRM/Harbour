@@ -11,6 +11,9 @@
     .container { display: flex; height: calc(100vh - 80px); }
     .left { width: 66%; display: flex; flex-direction: column; }
     .right { width: 34%; background: #fff; border-left: 1px solid #ddd; padding: 15px; }
+    .info-box { background: #eef5ff; padding: 18px; border-radius: 8px; margin: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); font-size: 1.05em; }
+    .info-box h3 { margin: 0 0 10px; color: #333; }
+    .info-box p { margin: 4px 0; }
     .section { padding: 15px; border-bottom: 1px solid #eee; }
     .half { height: 50%; overflow-y: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
@@ -41,34 +44,45 @@
 </head>
 <body>
 
-<!-- HEADER -->
-<div class="header">
-  <img src="/static/helm-logo.png" alt="Helm">
-  <div class="btn-group">
-    <button class="btn" onclick="location.href='/'">Home</button>
-    <button class="btn" onclick="openModal('clientModal')">+ Add Client</button>
-    <button class="btn" onclick="openModal('caseModal')">+ Add Case</button>
+  <!-- HEADER -->
+  <div class="header">
+    <img src="/static/helm-logo.png" alt="Helm">
+    <div class="btn-group">
+      <button class="btn" onclick="location.href='/'">Home</button>
+      <button class="btn" onclick="openModal('clientModal')">+ Add Client</button>
+      <button class="btn" onclick="openModal('caseModal')">+ Add Case</button>
+    </div>
+    <img src="/static/redwood-logo.png" alt="Redwood">
   </div>
-  <img src="/static/redwood-logo.png" alt="Redwood">
-</div>
 
   <div class="container">
     <div class="left">
 
-      <!-- CASE SELECTOR (always) -->
-      <div class="section" style="padding-bottom:0;">
-        <h3>Select Case</h3>
-        <select onchange="location = '?case_id=' + this.value;" style="width:100%; padding:8px;">
-          <option value="">-- Select Case --</option>
-          {% for case in all_cases if case.case_id %}
-            <option value="{{ case.case_id }}" {% if selected_case and selected_case.id == case.case_id %}selected{% endif %}>
-              [{{ case.business_name }}] {{ case.debtor_business_name or (case.debtor_first + ' ' + case.debtor_last) }}
+      <!-- CLIENT / DEBTOR INFO (TOP LEFT) -->
+      {% if selected_case and case_client %}
+      <div class="info-box">
+        <h3>Client: {{ case_client.business_name }}</h3>
+        <p><strong>Contact:</strong> {{ case_client.contact_first }} {{ case_client.contact_last }} | {{ case_client.phone }} | {{ case_client.email }}</p>
+        <p><strong>BACS:</strong> {{ case_client.bacs_details or '—' }}</p>
+        <hr>
+        <h3>Debtor: {{ selected_case.debtor_business_name or selected_case.debtor_first + ' ' + selected_case.debtor_last }}</h3>
+        <p><strong>Type:</strong> {{ selected_case.debtor_business_type }}</p>
+        <p><strong>Status:</strong> {{ selected_case.status }} {% if selected_case.substatus %}({{ selected_case.substatus }}){% endif %}</p>
+        <p><strong>Open Date:</strong> {{ selected_case.open_date }}</p>
+
+        <!-- SELECT ANOTHER CASE FOR THIS CLIENT -->
+        <select onchange="location = '?case_id=' + this.value;" style="width:100%; padding:8px; margin-top:10px;">
+          <option value="">-- Select Another Case for This Client --</option>
+          {% for cc in client_cases %}
+            <option value="{{ cc.id }}" {% if selected_case.id == cc.id %}selected{% endif %}>
+              {{ cc.debtor_business_name or cc.debtor_first + ' ' + cc.debtor_last }}
             </option>
           {% endfor %}
         </select>
       </div>
+      {% endif %}
 
-      <!-- NO CASE: SEARCH MODE -->
+      <!-- NO CASE: SEARCH -->
       {% if not selected_case %}
       <div class="section half">
         <h3>Search Cases</h3>
@@ -86,12 +100,12 @@
       </div>
 
       <div class="section half">
-        <p style="color:#777; font-style:italic;">Select a case above or search to begin.</p>
+        <p style="color:#777; font-style:italic;">Select a case or search to begin.</p>
       </div>
+      {% endif %}
 
-      {% else %}
-
-      <!-- CASE SELECTED: NOTES -->
+      <!-- NOTES (BOTTOM LEFT) -->
+      {% if selected_case %}
       <div class="section half">
         <h3>Notes</h3>
         <form action="/add_note" method="post" class="form-inline">
@@ -120,19 +134,11 @@
           {% endfor %}
         </table>
       </div>
-
-      <!-- CASE DETAILS -->
-      <div class="section half">
-        <strong>Client:</strong> {{ case_client.business_name }}<br>
-        {{ case_client.contact_first }} {{ case_client.contact_last }} | {{ case_client.email }}<br>
-        <strong>Debtor:</strong> {{ selected_case.debtor_business_name or selected_case.debtor_first + ' ' + selected_case.debtor_last }}<br>
-        Status: {{ selected_case.status }} {% if selected_case.substatus %}({{ selected_case.substatus }}){% endif %}
-      </div>
-
       {% endif %}
+
     </div>
 
-    <!-- RIGHT PANEL -->
+    <!-- RIGHT -->
     <div class="right">
       <h3>Transactions</h3>
 
@@ -174,7 +180,7 @@
     </div>
   </div>
 
-  <!-- MODALS (unchanged) -->
+  <!-- MODALS -->
   <div id="clientModal" class="modal">
     <div class="modal-content">
       <span class="close" onclick="closeModal('clientModal')">×</span>
@@ -220,7 +226,6 @@
     function closeModal(id) { document.getElementById(id).classList.remove('active'); }
     window.onclick = e => { if (e.target.classList.contains('modal')) e.target.classList.remove('active'); }
 
-    // Live search
     let timeout;
     document.getElementById('searchInput').addEventListener('input', () => {
       clearTimeout(timeout);
@@ -254,4 +259,3 @@
   </script>
 </body>
 </html>
-
