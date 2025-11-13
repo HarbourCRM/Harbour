@@ -8,7 +8,6 @@ import random
 import pandas as pd
 from io import BytesIO
 from weasyprint import HTML
-import jwt
 import uuid
 
 app = Flask(__name__)
@@ -25,7 +24,7 @@ class User(UserMixin):
         self.role = role
 
 @login_manager.user_loader
-def load_user(user_id):
+def load_user(user Fid):
     db = get_db()
     c = db.cursor()
     c.execute("SELECT id, username, role FROM users WHERE id = ?", (user_id,))
@@ -43,6 +42,15 @@ def close_db(e=None):
     db = g.pop('db', None)
     if db is not None:
         db.close()
+
+def format_date(date_str):
+    if not date_str:
+        return ''
+    try:
+        d = datetime.strptime(date_str, '%Y-%m-%d')
+        return d.strftime('%d/%m/%Y')
+    except:
+        return date_str
 
 def init_db():
     db = sqlite3.connect(DB)
@@ -88,6 +96,7 @@ def init_db():
         country TEXT,
         status TEXT DEFAULT 'Open',
         substatus TEXT,
+        next_action_date TEXT,
         open_date TEXT DEFAULT (date('now')),
         custom1 TEXT,
         custom2 TEXT,
@@ -133,7 +142,6 @@ def init_db():
     )
     ''')
 
-    # API TABLES
     c.execute('''
     CREATE TABLE IF NOT EXISTS api_keys (
         id INTEGER PRIMARY KEY,
@@ -201,10 +209,11 @@ def init_db():
                 first = random.choice(["Emma", "James", "Olivia", "Liam", "Noah", "Ava"])
                 last = random.choice(["Wilson", "Davis", "Martinez", "Lee", "Clark", "Walker"])
                 business = f"{first} {last} Ltd" if debtor_type in ["Limited", "Partnership"] else None
+                next_action = (datetime.now() + timedelta(days=random.randint(1, 30))).strftime('%Y-%m-%d')
                 c.execute('''
                     INSERT INTO cases 
-                    (client_id, debtor_business_type, debtor_business_name, debtor_first, debtor_last, phone, email, postcode, status, substatus, interest_rate)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (client_id, debtor_business_type, debtor_business_name, debtor_first, debtor_last, phone, email, postcode, status, substatus, next_action_date, interest_rate)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     client_id, debtor_type, business, first, last,
                     f"07{random.randint(100,999)} {random.randint(100000,999999)}",
@@ -212,6 +221,7 @@ def init_db():
                     f"SW1A {random.randint(1,9)}AA",
                     random.choice(statuses),
                     random.choice(["Awaiting Docs", "In Court", "Payment Plan", None]),
+                    next_action,
                     float(clients[client_ids.index(client_id)][6])
                 ))
                 case_id = c.lastrowid
@@ -247,6 +257,28 @@ def init_db():
 # RUN ONCE AT STARTUP
 init_db()
 
+# === LOGIN / LOGOUT ===
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password'].encode('utf-8')
+        db = get_db()
+        c = db.cursor()
+        c.execute("SELECT * FROM users WHERE username = ?", (username,))
+        user = c.fetchone()
+        if user and bcrypt.checkpw(password, user['password_hash']):
+            login_user(User(user['id'], user['username'], user['role']))
+            return redirect(url_for('dashboard'))
+        flash('Invalid credentials')
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
 # === FORMS ===
 @app.route('/add_client', methods=['POST'])
 @login_required
@@ -277,15 +309,16 @@ def add_case():
     c.execute("SELECT default_interest_rate FROM clients WHERE id = ?", (client_id,))
     client = c.fetchone()
     interest_rate = client['default_interest_rate'] if client else 0.0
+    next_action = data.get('next_action_date')
     c.execute('''
         INSERT INTO cases 
-        (client_id, debtor_business_type, debtor_business_name, debtor_first, debtor_last, phone, email, street, street2, city, postcode, country, status, substatus, custom1, custom2, custom3, interest_rate)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (client_id, debtor_business_type, debtor_business_name, debtor_first, debtor_last, phone, email, street, street2, city, postcode, country, status, substatus, next_action_date, custom1, custom2, custom3, interest_rate)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         client_id, data['debtor_business_type'], data.get('debtor_business_name'),
         data.get('debtor_first'), data.get('debtor_last'), data.get('phone'), data.get('email'),
         data.get('street'), data.get('street2'), data.get('city'), data.get('postcode'), data.get('country'),
-        data.get('status', 'Open'), data.get('substatus'), data.get('custom1'), data.get('custom2'), data.get('custom3'), interest_rate
+        data.get('status', 'Open'), data.get('substatus'), next_action, data.get('custom1'), data.get('custom2'), data.get('custom3'), interest_rate
     ))
     db.commit()
     return redirect(url_for('dashboard'))
@@ -807,22 +840,8 @@ def dashboard():
                            notes=notes,
                            transactions=transactions,
                            balance=balance,
-                           totals=totals)
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password'].encode('utf-8')
-        db = get_db()
-        c = db.cursor()
-        c.execute("SELECT * FROM users WHERE username = ?", (username,))
-        user = c.fetchone()
-        if user and bcrypt.checkpw(password, user['password_hash']):
-            login_user(User(user['id'], user['username'], user['role']))
-            return redirect(url_for('dashboard'))
-        flash('Invalid credentials')
-    return render_template('login.html')
+                           totals=totals,
+                           format_date=format_date)
 
 if __name__ == '__main__':
     app.run(debug=True)
