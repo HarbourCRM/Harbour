@@ -161,7 +161,7 @@ def init_db():
         id INTEGER PRIMARY KEY,
         client_id INTEGER NOT NULL,
         type TEXT NOT NULL,
-        to TEXT NOT NULL,
+        recipient TEXT NOT NULL,
         message TEXT,
         status TEXT DEFAULT 'queued',
         created_at TEXT DEFAULT (datetime('now'))
@@ -434,6 +434,130 @@ def revoke_key(key_id):
     c.execute("UPDATE api_keys SET active = 0 WHERE id = ? AND client_id = ?", (key_id, current_user.id))
     db.commit()
     return jsonify({"status": "revoked"})
+
+# === DEBTOR LANDING ===
+@app.route('/api/landing/<token>', methods=['GET'])
+def debtor_landing(token):
+    db = get_db()
+    c = db.cursor()
+    c.execute("""
+        SELECT c.id, c.debtor_first, c.debtor_last, c.debtor_business_name,
+               SUM(CASE WHEN m.type = 'Invoice' THEN m.amount ELSE 0 END) as invoice,
+               SUM(CASE WHEN m.type = 'Payment' THEN m.amount ELSE 0 END) as payment
+        FROM debtor_tokens t
+        JOIN cases c ON t.case_id = c.id
+        LEFT JOIN money m ON c.id = m.case_id
+        WHERE t.token = ? AND t.expires_at > datetime('now')
+        GROUP BY c.id
+    """, (token,))
+    case = c.fetchone()
+    if not case:
+        return jsonify({"error": "Invalid or expired link"}), 404
+
+    balance = (case['invoice'] or 0) - (case['payment'] or 0)
+    return jsonify({
+        "debtor": case['debtor_business_name'] or f"{case['debtor_first']} {case['debtor_last']}",
+        "balance": round(balance, 2),
+        "payment_url": url_for('api.payment_page', token=token, _external=True)
+    })
+
+# === PAYMENT PAGE ===
+@app.route('/api/pay/<token>', methods=['GET'])
+def payment_page(token):
+    return jsonify({"message": "Payment integration coming soon", "token": token})
+
+# === WEBHOOK: PAYMENT ===
+@app.route('/api/webhook/payment', methods=['POST'])
+def payment_webhook():
+    data = request.json
+    case_id = data.get('case_id')
+    amount = data.get('amount')
+    if case_id and amount:
+        db = get_db()
+        c = db.cursor()
+        c.execute("INSERT INTO money (case_id, type, amount, created_by, note) VALUES (?, 'Payment', ?, 0, 'API Payment')",
+                  (case_id, amount))
+        db.commit()
+    return jsonify({"status": "received"})
+
+# === SEND SMS ===
+@app.route('/api/send/sms', methods=['POST'])
+def send_sms():
+    auth = request.headers.get('Authorization')
+    if not auth or not auth.startswith('Bearer '):
+        return jsonify({"error": "Missing API key"}), 401
+    key = auth.split(' ')[1]
+    db = get_db()
+    c = db.cursor()
+    c.execute("SELECT client_id FROM api_keys WHERE key = ? AND active = 1", (key,))
+    row = c.fetchone()
+    if not row:
+        return jsonify({"error": "Invalid API key"}), 401
+    client_id = row['client_id']
+
+    data = request.json
+    phone = data.get('phone')
+    message = data.get('message')
+    if not phone or not message:
+        return jsonify({"error": "Missing phone or message"}), 400
+
+    c.execute("INSERT INTO outbound_logs (client_id, type, recipient, message) VALUES (?, 'sms', ?, ?)",
+              (client_id, phone, message))
+    db.commit()
+    return jsonify({"status": "queued", "to": phone})
+
+# === SEND EMAIL ===
+@app.route('/api/send/email', methods=['POST'])
+def send_email():
+    auth = request.headers.get('Authorization')
+    if not auth or not auth.startswith('Bearer '):
+        return jsonify({"error": "Missing API key"}), 401
+    key = auth.split(' ')[1]
+    db = get_db()
+    c = db.cursor()
+    c.execute("SELECT client_id FROM api_keys WHERE key = ? AND active = 1", (key,))
+    row = c.fetchone()
+    if not row:
+        return jsonify({"error": "Invalid API key"}), 401
+    client_id = row['client_id']
+
+    data = request.json
+    email = data.get('email')
+    subject = data.get('subject')
+    body = data.get('body')
+    if not all([email, subject, body]):
+        return jsonify({"error": "Missing fields"}), 400
+
+    c.execute("INSERT INTO outbound_logs (client_id, type, recipient, message) VALUES (?, 'email', ?, ?)",
+              (client_id, email, f"{subject}\n\n{body}"))
+    db.commit()
+    return jsonify({"status": "queued", "to": email})
+
+# === AI VOICE CALL ===
+@app.route('/api/call/start', methods=['POST'])
+def start_call():
+    auth = request.headers.get('Authorization')
+    if not auth or not auth.startswith('Bearer '):
+        return jsonify({"error": "Missing API key"}), 401
+    key = auth.split(' ')[1]
+    db = get_db()
+    c = db.cursor()
+    c.execute("SELECT client_id FROM api_keys WHERE key = ? AND active = 1", (key,))
+    row = c.fetchone()
+    if not row:
+        return jsonify({"error": "Invalid API key"}), 401
+    client_id = row['client_id']
+
+    data = request.json
+    phone = data.get('phone')
+    script = data.get('script')
+    if not phone or not script:
+        return jsonify({"error": "Missing phone or script"}), 400
+
+    c.execute("INSERT INTO outbound_logs (client_id, type, recipient, message) VALUES (?, 'call', ?, ?)",
+              (client_id, phone, script))
+    db.commit()
+    return jsonify({"status": "queued", "call_id": str(uuid.uuid4())})
 
 # === REPORTS ===
 @app.route('/report')
