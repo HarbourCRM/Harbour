@@ -88,8 +88,14 @@
     .client-result:hover { background: #f0f0f0; }
     #selectedClient { margin-bottom: 10px; font-weight: bold; color: #333; }
 
-    /* *** FIX: CONSISTENT NOTE / TRANSACTION TEXT SIZE *** */
-    .note-text, td:nth-child(4), .trans-date, .trans-type, .trans-amount, .trans-user { font-size: 13px !important; }
+    /* *** FIX: CONSISTENT TEXT SIZE ONLY (NO LAYOUT CHANGE) *** */
+    .note-text,
+    .trans-date,
+    .trans-type,
+    .trans-amount,
+    .trans-user {
+        font-size: 13px !important;
+    }
   </style>
 </head>
 <body>
@@ -150,7 +156,8 @@
       </div>
       {% endif %}
 
-      <!-- SEARCH BAR -->
+      <!-- SEARCH BAR (only when no case selected) -->
+      {% if not selected_case %}
       <div class="section">
         <div class="search-form">
           <select id="searchField">
@@ -169,62 +176,15 @@
         </div>
         <div id="searchResults"></div>
       </div>
+      {% endif %}
 
-    </div>
-
-    <!-- RIGHT PANEL -->
-    <div class="right">
-
-      <!-- TRANSACTIONS -->
-      <div class="section">
-        <h3>Transactions</h3>
-        <div class="add-bar-container">
-          <form class="add-bar" action="/add_transaction" method="post">
-            <input type="hidden" name="case_id" value="{{ selected_case.id if selected_case else '' }}">
-            <select name="type" required>
-              <option>Invoice</option>
-              <option>Payment</option>
-              <option>Charge</option>
-              <option>Interest</option>
-            </select>
-            <input type="number" name="amount" step="0.01" placeholder="Amount" required>
-            <input name="note" placeholder="Note (optional)">
-            <button type="submit">Add</button>
-          </form>
-        </div>
-
-        {% if transactions %}
-        <table>
-          <thead>
-            <tr>
-              <th class="trans-date">Date</th>
-              <th class="trans-type">Type</th>
-              <th class="trans-amount">Amount</th>
-              <th class="trans-user">User</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for t in transactions %}
-            <tr>
-              <td>{{ format_date(t.transaction_date) }}</td>
-              <td>{{ t.type }}</td>
-              <td>£{{ t.amount|round(2) }}</td>
-              <td>{{ t.username }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        {% else %}
-        <p style="text-align:center; margin-top:50px; color:#777;">No transactions yet</p>
-        {% endif %}
-      </div>
-
-      <!-- NOTES -->
+      <!-- NOTES (bottom-left, only when case selected) -->
+      {% if selected_case %}
       <div class="section">
         <h3>Notes</h3>
         <div class="add-bar-container">
           <form class="add-bar" action="/add_note" method="post">
-            <input type="hidden" name="case_id" value="{{ selected_case.id if selected_case else '' }}">
+            <input type="hidden" name="case_id" value="{{ selected_case.id }}">
             <select name="type" required>
               <option>General</option>
               <option>Inbound Call</option>
@@ -263,9 +223,59 @@
         <p style="text-align:center; margin-top:50px; color:#777;">No notes yet</p>
         {% endif %}
       </div>
+      {% endif %}
+
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right">
+
+      <!-- TRANSACTIONS -->
+      {% if selected_case %}
+      <div class="section">
+        <h3>Transactions</h3>
+        <div class="add-bar-container">
+          <form class="add-bar" action="/add_transaction" method="post">
+            <input type="hidden" name="case_id" value="{{ selected_case.id }}">
+            <select name="type" required>
+              <option>Invoice</option>
+              <option>Payment</option>
+              <option>Charge</option>
+              <option>Interest</option>
+            </select>
+            <input type="number" name="amount" step="0.01" placeholder="Amount" required>
+            <input name="note" placeholder="Note (optional)">
+            <button type="submit">Add</button>
+          </form>
+        </div>
+
+        {% if transactions %}
+        <table>
+          <thead>
+            <tr>
+              <th class="trans-date">Date</th>
+              <th class="trans-type">Type</th>
+              <th class="trans-amount">Amount</th>
+              <th class="trans-user">User</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in transactions %}
+            <tr>
+              <td>{{ format_date(t.transaction_date) }}</td>
+              <td>{{ t.type }}</td>
+              <td>£{{ t.amount|round(2) }}</td>
+              <td>{{ t.username }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p style="text-align:center; margin-top:50px; color:#777;">No transactions yet</p>
+        {% endif %}
+      </div>
 
       <!-- TOTALS -->
-      {% if selected_case %}
       <div style="padding:15px;">
         <div class="totals">
           <div class="total-box">Invoice<br>£{{ totals.Invoice|round(2) }}</div>
@@ -275,9 +285,8 @@
         </div>
         <p class="balance">Balance: £{{ balance|round(2) }}</p>
       </div>
-      {% else %}
-      <p style="text-align:center; margin-top:50px;">Select a case to view transactions</p>
       {% endif %}
+
     </div>
   </div>
 
