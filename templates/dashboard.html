@@ -128,7 +128,7 @@
 
         <!-- TEXT + DROPDOWN -->
         <p style="margin-top:15px; font-weight:bold;">Select another case for this client:</p>
-        <select onchange="location = '?case_id=' + this.value;" style="width:100%; padding:8px;">
+        <select onchange="location = '?case_id=' + this.value;" style="width:100%;.padding:8px;">
           <option value="">-- Select another case --</option>
           {% for cc in client_cases %}
             <option value="{{ cc.id }}" {% if selected_case.id == cc.id %}selected{% endif %}>
@@ -296,7 +296,7 @@
         <button class="btn" onclick="searchClients()">Search</button>
       </div>
       <div id="clientResults" class="client-results"></div>
-      <div id="selectedClient"></div>
+      <div id="selectedClient" style="margin-bottom:10px; font-weight:bold; color:#333;"></div>
 
       <form action="/add_case" method="post">
         <input type="hidden" name="client_id" id="selectedClientId" required>
@@ -352,13 +352,13 @@
       const mode = document.getElementById('clientSearchMode').value;
       if (!q) { document.getElementById('clientResults').innerHTML = ''; return; }
 
-      fetch(`/search?q=${encodeURIComponent(q)}&field=${field}&mode=${mode}`)
+      fetch(`/client_search?q=${encodeURIComponent(q)}&field=${field}&mode=${mode}`)
         .then(r => r.json())
         .then(results => {
           let html = '';
-          results.slice(0, 10).forEach(r => {
-            html += `<div class="client-result" onclick="selectClient(${r.client_code}, '${r.client}')">
-              [${r.client_code}] ${r.client}
+          results.forEach(r => {
+            html += `<div class="client-result" onclick="selectClient(${r.id}, '${r.name.replace(/'/g, "\\'")}')">
+              [${r.id}] ${r.name}
             </div>`;
           });
           if (!html) html = '<div class="client-result">No clients found</div>';
