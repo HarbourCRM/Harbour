@@ -458,6 +458,10 @@ def login():
 def report():
     return render_template('report.html')
 
-if __name__ == '__main__':
+# === CRITICAL: Recreate DB on every deploy ===
+with app.app_context():
     init_db()
+
+if __name__ == '__main__':
     app.run(debug=True)
+
