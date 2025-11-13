@@ -24,7 +24,7 @@ class User(UserMixin):
         self.role = role
 
 @login_manager.user_loader
-def load_user(user Fid):
+def load_user(user_id):  # FIXED: user_id
     db = get_db()
     c = db.cursor()
     c.execute("SELECT id, username, role FROM users WHERE id = ?", (user_id,))
