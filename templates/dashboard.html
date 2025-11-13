@@ -3,7 +3,89 @@
 <head>
   <title>Debt CRM</title>
   <style>
-    /* ... all previous styles ... */
+    body { margin:0; font-family: Arial; background: #f9f9f9; font-size: 14px; }
+    h1, h2, h3, h4, h5, h6 { font-size: 1.4em; margin: 0 0 8px; color: #333; font-weight: bold; }
+    .header { height: 80px; background: rgb(91, 103, 112); display: flex; align-items: center; justify-content: space-between; padding: 0 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .header img { height: 45px; }
+    .header .btn-group { display: flex; gap: 10px; }
+    .btn { background: rgb(227,82,5); color: white; border: none; padding: 8px 14px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px; }
+    .container { display: flex; height: calc(100vh - 80px); }
+    .left { width: 66%; display: flex; flex-direction: column; }
+    .right { width: 34%; background: #fff; border-left: 1px solid #ddd; padding: 15px; display: flex; flex-direction: column; }
+    .info-box { background: #eef5ff; padding: 18px; border-radius: 8px; margin: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    .info-box p { margin: 4px 0; }
+    .info-box .id-line { font-size: 0.9em; color: #555; font-weight: normal; }
+    .section { padding: 15px; border-bottom: 1px solid #eee; flex: 1; display: flex; flex-direction: column; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 4px 8px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
+    th { background: #f5f5f5; }
+    .note-date, .note-type, .note-user { width: 12%; font-size: 0.85em; color: #555; }
+    .note-text { width: 64%; }
+    .trans-date, .trans-type, .trans-amount, .trans-user { font-size: 0.9em; }
+    .search-form { display: flex; gap: 8px; margin-bottom: 15px; align-items: center; }
+    .search-form select, .search-form input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+    .search-form select { width: 150px; }
+    .search-form input { flex: 1; }
+    .result-row { cursor: pointer; }
+    .result-row:hover { background: #f0f0f0; }
+    .no-results { color: #777; font-style: italic; padding: 10px 0; }
+    .totals { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+    .total-box { background: #eef; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; }
+    .balance { font-weight: bold; font-size: 1.2em; color: #000; margin-top: 15px; text-align: center; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+    .modal.active { display: flex; }
+    .modal-content { background: white; padding: 20px; border-radius: 8px; width: 480px; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    .close { float: right; font-size: 1.6em; cursor: pointer; color: #999; }
+    .close:hover { color: #000; }
+    .modal h3 { margin: 0 0 15px; }
+    .modal form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .modal .full { grid-column: 1 / -1; }
+    .modal button { grid-column: 1 / -1; margin-top: 10px; }
+
+    /* LINKS = ORANGE */
+    .info-box a {
+      color: rgb(227,82,5) !important;
+      text-decoration: none;
+    }
+    .info-box a:hover {
+      text-decoration: underline;
+    }
+
+    /* PINNED ADD BARS */
+    .add-bar-container {
+      position: sticky;
+      bottom: 0;
+      background: #f8f9fa;
+      border-top: 1px solid #ddd;
+      padding: 12px 15px;
+    }
+    .add-bar {
+      display: grid;
+      grid-template-columns: 1fr 2fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+    .add-bar select, .add-bar input, .add-bar textarea, .add-bar button {
+      height: 40px;
+      padding: 0 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .add-bar select { width: 100%; }
+    .add-bar input[type="number"] { width: 100px; }
+    .add-bar textarea { resize: none; height: 40px; display: flex; align-items: center; }
+    .add-bar textarea::placeholder { color: #777; font-size: 14px; line-height: 40px; }
+    .add-bar button { background: rgb(227,82,5); color: white; font-weight: bold; }
+
+    /* CLIENT SEARCH IN MODAL */
+    .client-search { margin-bottom: 10px; }
+    .client-search input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+    .client-results { max-height: 150px; overflow-y: auto; border: 1px solid #ddd; background: white; }
+    .client-result { padding: 8px; cursor: pointer; border-bottom: 1px solid #eee; }
+    .client-result:hover { background: #f0f0f0; }
+
+    /* SMALLER TEXT */
     .section table { font-size: 12px; }
     .section th, .section td { padding: 3px 6px; }
     .note-date, .note-type, .note-user { font-size: 11px; }
@@ -28,6 +110,7 @@
 
   <div class="container">
     <div class="left">
+
       <!-- CLIENT / DEBTOR INFO -->
       {% if selected_case and case_client %}
       <div class="info-box">
@@ -36,7 +119,7 @@
         <p><strong>Contact:</strong> 
           {{ case_client.contact_first }} {{ case_client.contact_last }} | 
           <a href="tel:{{ case_client.phone }}">{{ case_client.phone }}</a> | 
-          <a href="mailto:_click:{{ case_client.email }}">{{ case_client.email }}</a>
+          <a href="mailto:{{ case_client.email }}">{{ case_client.email }}</a>
         </p>
         <p><strong>BACS:</strong> {{ case_client.bacs_details or '—' }}</p>
         <hr>
@@ -76,104 +159,226 @@
           <input id="searchInput" placeholder="Search..." onkeydown="if(event.key==='Enter') doSearch()">
           <button class="btn" onclick="doSearch()">Search</button>
         </div>
-        <div id="searchResults"></div>
+        <div id="searchResults">
+          <!-- Debug: Show all clients if no search -->
+          {% if not request.args.get('q') %}
+            <table>
+              <tr><th>Client ID</th><th>Name</th><th>Cases</th></tr>
+              {% for cl in clients %}
+                <tr onclick="location='?case_id=' + ({{ cl.id }})">
+                  <td>{{ cl.id }}</td>
+                  <td>{{ cl.business_name }}</td>
+                  <td>{{ loop.index }}</td>
+                </tr>
+              {% else %}
+                <tr><td colspan="3">No clients. Add one.</td></tr>
+              {% endfor %}
+            </table>
+          {% endif %}
+        </div>
       </div>
     </div>
 
     <div class="right">
       {% if selected_case and case_client %}
-      <!-- NOTES -->
-      <div class="section">
-        <h4>Notes</h4>
-        <table>
-          <tr><th class="note-date">Date</th><th class="note-type">Type</th><th class="note-text">Note</th><th class="note-user">User</th></tr>
-          {% for n in notes %}
-            <tr>
-              <td class="note-date">{{ n.created_at[:10] }} {{ n.created_at[11:16] }}</td>
-              <td class="note-type">{{ n.type }}</td>
-              <td class="note-text">{{ n.note }}</td>
-              <td class="note-user">{{ n.username }}</td>
-            </tr>
-          {% else %}
-            <tr><td colspan="4">No notes</td></tr>
-          {% endfor %}
-        </table>
+        <!-- NOTES -->
+        <div class="section">
+          <h4>Notes</h4>
+          <table>
+            <tr><th class="note-date">Date</th><th class="note-type">Type</th><th class="note-text">Note</th><th class="note-user">User</th></tr>
+            {% for n in notes %}
+              <tr>
+                <td class="note-date">{{ n.created_at[:10] }} {{ n.created_at[11:16] }}</td>
+                <td class="note-type">{{ n.type }}</td>
+                <td class="note-text">{{ n.note }}</td>
+                <td class="note-user">{{ n.username }}</td>
+              </tr>
+            {% else %}
+              <tr><td colspan="4">No notes</td></tr>
+            {% endfor %}
+          </table>
 
-        <div class="add-bar-container">
-          <div class="add-bar">
-            <select name="note_type" form="addNoteForm">
-              <option>General</option>
-              <option>Inbound Call</option>
-              <option>Outbound Call</option>
-              <option>Email Sent</option>
-              <option>Email Received</option>
-            </select>
-            <textarea name="note" placeholder="Enter note..." form="addNoteForm"></textarea>
-            <button form="addNoteForm">Add</button>
+          <div class="add-bar-container">
+            <div class="add-bar">
+              <select name="note_type" form="addNoteForm">
+                <option>General</option>
+                <option>Inbound Call</option>
+                <option>Outbound Call</option>
+                <option>Email Sent</option>
+                <option>Email Received</option>
+              </select>
+              <textarea name="note" placeholder="Enter note..." form="addNoteForm"></textarea>
+              <button form="addNoteForm">Add</button>
+            </div>
           </div>
+          <form id="addNoteForm" method="post" action="/add_note" style="display:none;">
+            <input type="hidden" name="case_id" value="{{ selected_case.id }}">
+          </form>
         </div>
-        <form id="addNoteForm" method="post" action="/add_note" style="display:none;">
-          <input type="hidden" name="case_id" value="{{ selected_case.id }}">
-        </form>
-      </div>
 
-      <!-- TRANSACTIONS -->
-      <div class="section">
-        <h4>Transactions</h4>
-        <table>
-          <tr><th class="trans-date">Date</th><th class="trans-type">Type</th><th class="trans-amount">Amount</th><th class="trans-note">Note</th><th class="trans-user">User</th></tr>
-          {% for t in transactions %}
-            <tr>
-              <td class="trans-date">{{ t.transaction_date }}</td>
-              <td class="trans-type">{{ t.type }}</td>
-              <td class="trans-amount">£{{ "%.2f"|format(t.amount) }}</td>
-              <td class="trans-note">{{ t.note or '' }}</td>
-              <td class="trans-user">{{ t.username }}</td>
-            </tr>
-          {% else %}
-            <tr><td colspan="5">No transactions</td></tr>
-          {% endfor %}
-        </table>
+        <!-- TRANSACTIONS -->
+        <div class="section">
+          <h4>Transactions</h4>
+          <table>
+            <tr><th class="trans-date">Date</th><th class="trans-type">Type</th><th class="trans-amount">Amount</th><th class="trans-note">Note</th><th class="trans-user">User</th></tr>
+            {% for t in transactions %}
+              <tr>
+                <td class="trans-date">{{ t.transaction_date }}</td>
+                <td class="trans-type">{{ t.type }}</td>
+                <td class="trans-amount">£{{ "%.2f"|format(t.amount) }}</td>
+                <td class="trans-note">{{ t.note or '' }}</td>
+                <td class="trans-user">{{ t.username }}</td>
+              </tr>
+            {% else %}
+              <tr><td colspan="5">No transactions</td></tr>
+            {% endfor %}
+          </table>
 
-        <div class="add-bar-container">
-          <div class="add-bar">
-            <select name="type" form="addMoneyForm">
-              <option>Invoice</option>
-              <option>Payment</option>
-              <option>Charge</option>
-              <option>Interest</option>
-            </select>
-            <input type="number" step="0.01" name="amount" placeholder="Amount" form="addMoneyForm">
-            <textarea name="note" placeholder="Note (optional)" form="addMoneyForm"></textarea>
-            <button form="addMoneyForm">Add</button>
+          <div class="add-bar-container">
+            <div class="add-bar">
+              <select name="type" form="addMoneyForm">
+                <option>Invoice</option>
+                <option>Payment</option>
+                <option>Charge</option>
+                <option>Interest</option>
+              </select>
+              <input type="number" step="0.01" name="amount" placeholder="Amount" form="addMoneyForm">
+              <textarea name="note" placeholder="Note (optional)" form="addMoneyForm"></textarea>
+              <button form="addMoneyForm">Add</button>
+            </div>
           </div>
+          <form id="addMoneyForm" method="post" action="/add_money" style="display:none;">
+            <input type="hidden" name="case_id" value="{{ selected_case.id }}">
+          </form>
         </div>
-        <form id="addMoneyForm" method="post" action="/add_money" style="display:none;">
-          <input type="hidden" name="case_id" value="{{ selected_case.id }}">
-        </form>
-      </div>
 
-      <div class="totals">
-        {% for typ, amt in totals.items() if amt > 0 %}
-          <div class="total-box">{{ typ }}<br>£{{ "%.2f"|format(amt) }}</div>
-        {% endfor %}
-      </div>
+        <div class="totals">
+          {% for typ, amt in totals.items() if amt > 0 %}
+            <div class="total-box">{{ typ }}<br>£{{ "%.2f"|format(amt) }}</div>
+          {% endfor %}
+        </div>
 
-      <div class="balance">
-        Balance: {{ balance }}
-      </div>
-
+        <div class="balance">
+          Balance: {{ balance }}
+        </div>
       {% else %}
-      <p style="color:#777; font-style:italic; text-align:center; margin-top:50px;">Select a case to view transactions</p>
+        <p style="color:#777; font-style:italic; text-align:center; margin-top:50px;">Select a case to view transactions</p>
       {% endif %}
     </div>
   </div>
 
   <!-- MODALS -->
-  <!-- ... (same as before) ... -->
+  <div id="clientModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('clientModal')">×</span>
+      <h3>Add Client</h3>
+      <form action="/add_client" method="post">
+        <select name="business_type" required><option>Limited</option><option>Partnership</option><option>Sole Trader</option><option>Individual</option></select>
+        <input name="business_name" placeholder="Business Name" required>
+        <input name="contact_first" placeholder="Contact First">
+        <input name="contact_last" placeholder="Contact Last">
+        <input name="phone" placeholder="Phone">
+        <input name="email" placeholder="Email">
+        <input name="bacs_details" placeholder="BACS Details">
+        <input name="default_interest_rate" type="number" step="0.01" placeholder="Default Rate %" value="0">
+        <button type="submit" class="btn full">Save Client</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="caseModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('caseModal')">×</span>
+      <h3>Add Case</h3>
+      <div class="client-search">
+        <input type="text" id="clientSearch" placeholder="Search client by name or ID..." autocomplete="off">
+        <div id="clientResults" class="client-results"></div>
+      </div>
+      <form action="/add_case" method="post">
+        <input type="hidden" name="client_id" id="selectedClientId" required>
+        <div id="selectedClientName" style="margin-bottom:10px; font-weight:bold;"></div>
+        <select name="debtor_business_type"><option>Limited</option><option>Partnership</option><option>Sole Trader</option><option>Individual</option></select>
+        <input name="debtor_business_name" placeholder="Debtor Business">
+        <input name="debtor_first" placeholder="Debtor First">
+        <input name="debtor_last" placeholder="Debtor Last">
+        <input name="phone" placeholder="Phone">
+        <input name="email" placeholder="Email">
+        <button type="submit" class="btn full">Save Case</button>
+      </form>
+    </div>
+  </div>
 
   <script>
-    /* ... same as before ... */
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+    window.onclick = e => { if (e.target.classList.contains('modal')) e.target.classList.remove('active'); }
+
+    function doSearch() {
+      const q = document.getElementById('searchInput').value.trim();
+      const field = document.getElementById('searchField').value;
+      const mode = document.getElementById('searchMode').value;
+      if (!q) { 
+        location.reload(); 
+        return; 
+      }
+
+      fetch(`/search?q=${encodeURIComponent(q)}&field=${field}&mode=${mode}`)
+        .then(r => r.json())
+        .then(results => {
+          let html = '<table><tr><th>Client Code</th><th>Client</th><th>Debtor</th><th>Postcode</th><th>Email</th><th>Phone</th></tr>';
+          if (results.length === 0) {
+            html += '<tr><td colspan="6" class="no-results">No cases found</td></tr>';
+          } else {
+            results.forEach(r => {
+              html += `<tr class="result-row" onclick="location='?case_id=${r.case_id}'">
+                <td>${r.client_code}</td>
+                <td>${r.client}</td>
+                <td>${r.debtor}</td>
+                <td>${r.postcode}</td>
+                <td>${r.email}</td>
+                <td>${r.phone}</td>
+              </tr>`;
+            });
+          }
+          html += '</table>';
+          document.getElementById('searchResults').innerHTML = html;
+        })
+        .catch(() => {
+          document.getElementById('searchResults').innerHTML = '<p class="no-results">Search error.</p>';
+        });
+    }
+
+    // Client search in Add Case modal
+    let clientTimeout;
+    document.getElementById('clientSearch').addEventListener('input', () => {
+      clearTimeout(clientTimeout);
+      const q = document.getElementById('clientSearch').value.trim();
+      if (q.length < 2) {
+        document.getElementById('clientResults').innerHTML = '';
+        return;
+      }
+
+      clientTimeout = setTimeout(() => {
+        fetch(`/search?q=${encodeURIComponent(q)}&field=client_name&mode=contains`)
+          .then(r => r.json())
+          .then(results => {
+            let html = '';
+            results.forEach(r => {
+              html += `<div class="client-result" onclick="selectClient(${r.client_code}, '${r.client}')">
+                [${r.client_code}] ${r.client}
+              </div>`;
+            });
+            document.getElementById('clientResults').innerHTML = html || '<div class="client-result">No clients found</div>';
+          });
+      }, 300);
+    });
+
+    function selectClient(id, name) {
+      document.getElementById('selectedClientId').value = id;
+      document.getElementById('selectedClientName').innerText = `Selected: ${name} (ID: ${id})`;
+      document.getElementById('clientResults').innerHTML = '';
+      document.getElementById('clientSearch').value = '';
+    }
   </script>
 </body>
 </html>
