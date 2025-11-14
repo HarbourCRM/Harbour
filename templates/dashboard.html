@@ -95,9 +95,8 @@
     .client-result:hover { background: #f0f0f0; }
     #selectedClient { margin-bottom: 10px; font-weight: bold; color: #333; }
 
-    /* === LOCAL SCROLLING — FULL HEIGHT === */
-    .notes-scroll,
-    .transactions-scroll {
+    /* LOCAL SCROLLING */
+    .notes-scroll, .transactions-scroll {
       flex: 1;
       overflow-y: auto;
       border: 1px solid #eee;
@@ -107,9 +106,12 @@
       margin-top: 10px;
     }
 
-    /* TEXT SIZE FIX */
-    .note-text, .trans-note { font-size: 13px !important; }
-    .trans-note { width: 50%; word-break: break-word; }
+    /* R/B & ACTIONS */
+    .trans-rb, .note-actions, .trans-actions { width: 30px; text-align: center; font-size: 12px; }
+    .grey-charge { color: #999 !important; }
+    .grey-charge td { color: #999 !important; }
+    .btn-small { font-size: 11px; padding: 2px 6px; margin: 0 2px; }
+    .btn-small.delete { background: #d9534f; }
   </style>
 </head>
 <body>
@@ -191,7 +193,7 @@
       </div>
       {% endif %}
 
-      <!-- NOTES (BOTTOM-LEFT) -->
+      <!-- NOTES -->
       {% if selected_case %}
       <div class="section" style="display:flex; flex-direction:column; height:100%;">
         <h3>Notes</h3>
@@ -220,6 +222,7 @@
                 <th class="note-type">Type</th>
                 <th class="note-text">Note</th>
                 <th class="note-user">User</th>
+                <th class="note-actions">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -229,6 +232,10 @@
                 <td>{{ n.type }}</td>
                 <td class="note-text">{{ n.note }}</td>
                 <td>{{ n.username }}</td>
+                <td class="note-actions">
+                  <button class="btn-small" onclick="editNote({{ n.id }}, '{{ n.type }}', '{{ n.note|escape }}')">Edit</button>
+                  <button class="btn-small delete" onclick="deleteNote({{ n.id }})">Del</button>
+                </td>
               </tr>
               {% endfor %}
             </tbody>
@@ -289,16 +296,25 @@
                 <th class="trans-amount">Amount</th>
                 <th class="trans-note" style="width:50%;">Note</th>
                 <th class="trans-user">User</th>
+                <th class="trans-rb">R</th>
+                <th class="trans-rb">B</th>
+                <th class="trans-actions">Actions</th>
               </tr>
             </thead>
             <tbody>
               {% for t in transactions %}
-              <tr>
+              <tr class="{% if t.type == 'Charge' and t.recoverable == 0 %}grey-charge{% endif %}">
                 <td>{{ format_date(t.transaction_date) }}</td>
                 <td>{{ t.type }}</td>
                 <td>£{{ t.amount|round(2) }}</td>
                 <td class="trans-note">{{ t.note or '' }}</td>
                 <td>{{ t.username }}</td>
+                <td class="trans-rb">{% if t.recoverable %}✓{% endif %}</td>
+                <td class="trans-rb">{% if t.billable %}✓{% endif %}</td>
+                <td class="trans-actions">
+                  <button class="btn-small" onclick="editTransaction({{ t.id }})">Edit</button>
+                  <button class="btn-small delete" onclick="deleteTransaction({{ t.id }})">Del</button>
+                </td>
               </tr>
               {% endfor %}
             </tbody>
@@ -383,6 +399,45 @@
       <h3>API Keys</h3>
       <button class="btn" onclick="generateKey()">+ New Key</button>
       <div id="apiKeys" style="margin-top:15px;"></div>
+    </div>
+  </div>
+
+  <!-- NOTE EDIT MODAL -->
+  <div id="noteEditModal" class="modal">
+    <div class="modal-content" style="width:500px;">
+      <span class="close" onclick="closeModal('noteEditModal')">×</span>
+      <h3>Edit Note</h3>
+      <form id="noteEditForm" action="/edit_note" method="post">
+        <input type="hidden" name="note_id" id="editNoteId">
+        <select name="type" id="editNoteType" required>
+          <option>General</option>
+          <option>Inbound Call</option>
+          <option>Outbound Call</option>
+          <option>Email Sent</option>
+          <option>Email Received</option>
+          <option>Letter Sent</option>
+        </select>
+        <textarea name="note" id="editNoteText" placeholder="Enter note..." required style="height:80px;"></textarea>
+        <button type="submit" class="btn full">Save</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- TRANSACTION EDIT MODAL -->
+  <div id="transEditModal" class="modal">
+    <div class="modal-content" style="width:550px;">
+      <span class="close" onclick="closeModal('transEditModal')">×</span>
+      <h3>Edit Transaction</h3>
+      <form id="transEditForm" action="/edit_transaction" method="post">
+        <input type="hidden" name="trans_id" id="editTransId">
+        <input type="number" name="amount" id="editTransAmount" step="0.01" placeholder="Amount" required>
+        <input name="note" id="editTransNote" placeholder="Note (optional)">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+          <label><input type="checkbox" name="recoverable" id="editTransRecoverable"> Recoverable</label>
+          <label><input type="checkbox" name="billable" id="editTransBillable"> Billable</label>
+        </div>
+        <button type="submit" class="btn full">Save</button>
+      </form>
     </div>
   </div>
 
@@ -471,6 +526,40 @@
       if (confirm("Revoke this key?")) {
         fetch(`/api/revoke_key/${id}`, {method: 'POST'})
           .then(() => loadApiKeys());
+      }
+    }
+
+    function editNote(id, type, note) {
+      document.getElementById('editNoteId').value = id;
+      document.getElementById('editNoteType').value = type;
+      document.getElementById('editNoteText').value = note;
+      openModal('noteEditModal');
+    }
+
+    function deleteNote(id) {
+      if (confirm("Delete this note?")) {
+        fetch(`/delete_note/${id}`, {method: 'POST'})
+          .then(() => location.reload());
+      }
+    }
+
+    function editTransaction(id) {
+      fetch(`/get_transaction/${id}`)
+        .then(r => r.json())
+        .then(t => {
+          document.getElementById('editTransId').value = t.id;
+          document.getElementById('editTransAmount').value = t.amount;
+          document.getElementById('editTransNote').value = t.note || '';
+          document.getElementById('editTransRecoverable').checked = t.recoverable;
+          document.getElementById('editTransBillable').checked = t.billable;
+          openModal('transEditModal');
+        });
+    }
+
+    function deleteTransaction(id) {
+      if (confirm("Delete this transaction?")) {
+        fetch(`/delete_transaction/${id}`, {method: 'POST'})
+          .then(() => location.reload());
       }
     }
 
