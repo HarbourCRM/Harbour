@@ -79,6 +79,12 @@
     .add-bar textarea::placeholder { color: #777; font-size: 14px; line-height: 40px; }
     .add-bar button { background: rgb(227,82,5); color: white; font-weight: bold; }
 
+    /* NOTES ADD-BAR: WIDE TEXT */
+    .notes-add-bar {
+      grid-template-columns: 7.5rem 1fr 4rem !important;
+    }
+    .notes-add-bar button { width: 4rem !important; }
+
     /* CLIENT SEARCH IN ADD CASE */
     .client-search-form { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
     .client-search-form select, .client-search-form input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
@@ -89,15 +95,34 @@
     .client-result:hover { background: #f0f0f0; }
     #selectedClient { margin-bottom: 10px; font-weight: bold; color: #333; }
 
-    /* *** FIX: CONSISTENT TEXT SIZE + 50% NOTE *** */
-    .note-text,
-    .trans-date,
-    .trans-type,
-    .trans-amount,
-    .trans-user,
-    .trans-note {
-        font-size: 13px !important;
+    /* === LOCAL SCROLLING FOR NOTES & TRANSACTIONS === */
+    .notes-scroll,
+    .transactions-scroll {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      padding: 8px;
+      background: #fff;
+      margin-top: 10px;
     }
+    .notes-scroll::-webkit-scrollbar,
+    .transactions-scroll::-webkit-scrollbar {
+      width: 8px;
+    }
+    .notes-scroll::-webkit-scrollbar-track,
+    .transactions-scroll::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    .notes-scroll::-webkit-scrollbar-thumb,
+    .transactions-scroll::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 4px;
+    }
+
+    /* TEXT SIZE FIX */
+    .note-text, .trans-note { font-size: 13px !important; }
     .trans-note { width: 50%; word-break: break-word; }
   </style>
 </head>
@@ -158,7 +183,7 @@
       </div>
       {% endif %}
 
-      <!-- SEARCH BAR (only when no case) -->
+      <!-- SEARCH BAR -->
       {% if not selected_case %}
       <div class="section">
         <div class="search-form">
@@ -180,12 +205,12 @@
       </div>
       {% endif %}
 
-      <!-- NOTES (bottom-left) -->
+      <!-- NOTES (BOTTOM-LEFT) -->
       {% if selected_case %}
       <div class="section">
         <h3>Notes</h3>
         <div class="add-bar-container">
-          <form class="add-bar" action="/add_note" method="post" style="grid-template-columns: 120px 1fr auto;">
+          <form class="add-bar notes-add-bar" action="/add_note" method="post">
             <input type="hidden" name="case_id" value="{{ selected_case.id }}">
             <select name="type" required>
               <option>General</option>
@@ -195,33 +220,34 @@
               <option>Email Received</option>
               <option>Letter Sent</option>
             </select>
-            <textarea name="note" placeholder="Enter note..." required style="height:40px; resize:none;"></textarea>
-            <button type="submit" style="width:60px;">Add</button>
+            <textarea name="note" placeholder="Enter note..." required></textarea>
+            <button type="submit">Add</button>
           </form>
         </div>
 
-        
         {% if notes %}
-        <table>
-          <thead>
-            <tr>
-              <th class="note-date">Date</th>
-              <th class="note-type">Type</th>
-              <th class="note-text">Note</th>
-              <th class="note-user">User</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for n in notes %}
-            <tr>
-              <td>{{ format_date(n.created_at.split(' ')[0]) }}</td>
-              <td>{{ n.type }}</td>
-              <td class="note-text">{{ n.note }}</td>
-              <td>{{ n.username }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+        <div class="notes-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th class="note-date">Date</th>
+                <th class="note-type">Type</th>
+                <th class="note-text">Note</th>
+                <th class="note-user">User</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for n in notes %}
+              <tr>
+                <td>{{ format_date(n.created_at.split(' ')[0]) }}</td>
+                <td>{{ n.type }}</td>
+                <td class="note-text">{{ n.note }}</td>
+                <td>{{ n.username }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
         {% else %}
         <p style="text-align:center; margin-top:50px; color:#777;">No notes yet</p>
         {% endif %}
@@ -238,30 +264,24 @@
       <div class="section">
         <h3>Transactions</h3>
         <div class="add-bar-container">
-  <form class="add-bar" action="/add_transaction" method="post">
-    <input type="hidden" name="case_id" value="{{ selected_case.id }}">
-
-    <select name="type" id="transType" required>
-      <option>Invoice</option>
-      <option>Payment</option>
-      <option>Charge</option>
-      <option>Interest</option>
-    </select>
-
-    <input type="number" name="amount" step="0.01" placeholder="Amount" required>
-
-    <input type="date" name="transaction_date" value="{{ today_str }}" required>
-
-    <input name="note" placeholder="Note (optional)">
-
-    <div id="chargeOpts" style="display:none; grid-column:1/-1; gap:10px; margin-top:5px;">
-      <label><input type="checkbox" name="recoverable"> Recoverable</label>
-      <label><input type="checkbox" name="billable"> Billable</label>
-    </div>
-
-    <button type="submit">Add</button>
-  </form>
-</div>
+          <form class="add-bar" action="/add_transaction" method="post">
+            <input type="hidden" name="case_id" value="{{ selected_case.id }}">
+            <select name="type" id="transType" required>
+              <option>Invoice</option>
+              <option>Payment</option>
+              <option>Charge</option>
+              <option>Interest</option>
+            </select>
+            <input type="number" name="amount" step="0.01" placeholder="Amount" required>
+            <input type="date" name="transaction_date" value="{{ today_str }}" required>
+            <input name="note" placeholder="Note (optional)">
+            <div id="chargeOpts" style="display:none; grid-column:1/-1; gap:10px; margin-top:5px;">
+              <label><input type="checkbox" name="recoverable"> Recoverable</label>
+              <label><input type="checkbox" name="billable"> Billable</label>
+            </div>
+            <button type="submit">Add</button>
+          </form>
+        </div>
 
         <script>
           const typeSel = document.getElementById('transType');
@@ -274,28 +294,30 @@
         </script>
 
         {% if transactions %}
-        <table>
-          <thead>
-            <tr>
-              <th class="trans-date">Date</th>
-              <th class="trans-type">Type</th>
-              <th class="trans-amount">Amount</th>
-              <th class="trans-note" style="width:50%;">Note</th>
-              <th class="trans-user">User</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for t in transactions %}
-            <tr>
-              <td>{{ format_date(t.transaction_date) }}</td>
-              <td>{{ t.type }}</td>
-              <td>£{{ t.amount|round(2) }}</td>
-              <td class="trans-note">{{ t.note or '' }}</td>
-              <td>{{ t.username }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+        <div class="transactions-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th class="trans-date">Date</th>
+                <th class="trans-type">Type</th>
+                <th class="trans-amount">Amount</th>
+                <th class="trans-note" style="width:50%;">Note</th>
+                <th class="trans-user">User</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for t in transactions %}
+              <tr>
+                <td>{{ format_date(t.transaction_date) }}</td>
+                <td>{{ t.type }}</td>
+                <td>£{{ t.amount|round(2) }}</td>
+                <td class="trans-note">{{ t.note or '' }}</td>
+                <td>{{ t.username }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
         {% else %}
         <p style="text-align:center; margin-top:50px; color:#777;">No transactions yet</p>
         {% endif %}
@@ -472,6 +494,3 @@
   </script>
 </body>
 </html>
-
-
-
