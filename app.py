@@ -52,7 +52,7 @@ def format_date(date_str):
     except:
         return date_str
 
-# === INIT_DB FUNCTION (MUST BE BEFORE CALL) ===
+# === INIT_DB FUNCTION ===
 def init_db():
     db = sqlite3.connect(DB)
     c = db.cursor()
@@ -179,7 +179,7 @@ def init_db():
     )
     ''')
 
-    # === FORCE ADMIN USER: helmadmin / helmadmin ===
+    # === FORCE ADMIN USER ===
     c.execute("SELECT COUNT(*) FROM users WHERE username = ?", ('helmadmin',))
     if c.fetchone()[0] == 0:
         print("Creating admin user: helmadmin")
@@ -231,7 +231,6 @@ def init_db():
                       next_action))
                 case_id = c.lastrowid
 
-                # === CASE ID 1: 30 NOTES + 30 TRANSACTIONS ===
                 if case_counter == 1:
                     print(f"Adding 30 notes + 30 transactions to Case ID 1")
                     for n in range(30):
@@ -269,6 +268,7 @@ def init_db():
 init_db()
 
 # === ROUTES ===
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -600,6 +600,58 @@ def revoke_key(key_id):
     db.commit()
     return '', 204
 
+# === EDIT / DELETE ROUTES ===
+@app.route('/edit_note', methods=['POST'])
+@login_required
+def edit_note():
+    db = get_db()
+    c = db.cursor()
+    c.execute("UPDATE notes SET type = ?, note = ? WHERE id = ?", 
+              (request.form['type'], request.form['note'], request.form['note_id']))
+    db.commit()
+    return redirect(url_for('dashboard', case_id=request.form.get('case_id') or ''))
+
+@app.route('/delete_note/<int:note_id>', methods=['POST'])
+@login_required
+def delete_note(note_id):
+    db = get_db()
+    c = db.cursor()
+    c.execute("DELETE FROM notes WHERE id = ?", (note_id,))
+    db.commit()
+    return '', 204
+
+@app.route('/get_transaction/<int:trans_id>')
+@login_required
+def get_transaction(trans_id):
+    db = get_db()
+    c = db.cursor()
+    c.execute("SELECT * FROM money WHERE id = ?", (trans_id,))
+    t = c.fetchone()
+    return jsonify(dict(t))
+
+@app.route('/edit_transaction', methods=['POST'])
+@login_required
+def edit_transaction():
+    db = get_db()
+    c = db.cursor()
+    recoverable = 1 if request.form.get('recoverable') else 0
+    billable = 1 if request.form.get('billable') else 0
+    c.execute('''
+        UPDATE money SET amount = ?, note = ?, recoverable = ?, billable = ?
+        WHERE id = ?
+    ''', (request.form['amount'], request.form.get('note', ''), recoverable, billable, request.form['trans_id']))
+    db.commit()
+    return redirect(url_for('dashboard', case_id=request.form.get('case_id') or ''))
+
+@app.route('/delete_transaction/<int:trans_id>', methods=['POST'])
+@login_required
+def delete_transaction(trans_id):
+    db = get_db()
+    c = db.cursor()
+    c.execute("DELETE FROM money WHERE id = ?", (trans_id,))
+    db.commit()
+    return '', 204
+
 # === DASHBOARD ===
 @app.route('/')
 @app.route('/dashboard')
@@ -654,7 +706,6 @@ def dashboard():
                 else:
                     balance += amt
 
-    # FIX: Generate today's date in Python
     today_str = datetime.now().strftime('%Y-%m-%d')
 
     return render_template('dashboard.html',
