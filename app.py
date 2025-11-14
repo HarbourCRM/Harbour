@@ -215,6 +215,9 @@ def init_db():
 
         debtor_types = ["Individual", "Sole Trader", "Limited", "Partnership"]
         statuses = ["Open", "On Hold", "Closed"]
+
+        case_counter = 1  # Track case ID
+
         for client_id in client_ids:
             for i in range(5):
                 debtor_type = random.choice(debtor_types)
@@ -222,8 +225,9 @@ def init_db():
                 last = random.choice(["Wilson", "Davis", "Martinez", "Lee", "Clark", "Walker"])
                 business = f"{first} {last} Ltd" if debtor_type in ["Limited", "Partnership"] else None
                 next_action = (datetime.now() + timedelta(days=random.randint(1, 30))).strftime('%Y-%m-%d')
+
                 c.execute('''
-                    INSERT INTO cases 
+                    INSERT INTO cases
                     (client_id, debtor_business_type, debtor_business_name, debtor_first, debtor_last,
                      phone, email, status, substatus, next_action_date)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -234,18 +238,40 @@ def init_db():
                       random.choice(["Awaiting Docs", "In Court", None]),
                       next_action))
                 case_id = c.lastrowid
-                for _ in range(random.randint(1,4)):
-                    typ = random.choice(["Invoice","Payment","Charge","Interest"])
-                    amt = round(random.uniform(100,5000),2)
-                    c.execute("INSERT INTO money (case_id, type, amount, created_by) VALUES (?,?,?,1)",
-                              (case_id, typ, amt))
-                for _ in range(random.randint(0,3)):
-                    note_type = random.choice(["General","Inbound Call","Outbound Call"])
-                    c.execute("INSERT INTO notes (case_id, type, note, created_by) VALUES (?,?,?,1)",
-                              (case_id, note_type, f"Sample {note_type.lower()} note"))
 
-    db.commit()
-    db.close()
+                # === SPECIAL: CASE ID 1 GETS 30 NOTES + 30 TRANSACTIONS ===
+                if case_counter == 1:
+                    print(f"Adding 30 notes + 30 transactions to Case ID 1")
+                    # 30 Notes
+                    for n in range(30):
+                        note_type = random.choice(["General", "Inbound Call", "Outbound Call"])
+                        note_text = f"Auto-generated note {n+1}/30 for testing scroll behavior."
+                        c.execute("INSERT INTO notes (case_id, type, note, created_by) VALUES (?,?,?,1)",
+                                  (case_id, note_type, note_text))
+
+                    # 30 Transactions
+                    for t in range(30):
+                        typ = random.choice(["Invoice", "Payment", "Charge", "Interest"])
+                        amt = round(random.uniform(50, 5000), 2)
+                        trans_date = (datetime.now() - timedelta(days=random.randint(0, 365))).strftime('%Y-%m-%d')
+                        note = f"Test trans {t+1}" if t % 5 == 0 else ""
+                        c.execute('''
+                            INSERT INTO money (case_id, type, amount, created_by, note, transaction_date)
+                            VALUES (?,?,?,?,?,?)
+                        ''', (case_id, typ, amt, 1, note, trans_date))
+                else:
+                    # === NORMAL RANDOM DATA FOR OTHER CASES ===
+                    for _ in range(random.randint(1, 4)):
+                        typ = random.choice(["Invoice", "Payment", "Charge", "Interest"])
+                        amt = round(random.uniform(100, 5000), 2)
+                        c.execute("INSERT INTO money (case_id, type, amount, created_by) VALUES (?,?,?,1)",
+                                  (case_id, typ, amt))
+                    for _ in range(random.randint(0, 3)):
+                        note_type = random.choice(["General", "Inbound Call", "Outbound Call"])
+                        c.execute("INSERT INTO notes (case_id, type, note, created_by) VALUES (?,?,?,1)",
+                                  (case_id, note_type, f"Sample {note_type.lower()} note"))
+
+                case_counter += 1  # Increment for next case
 
 # === CALL init_db ON STARTUP ===
 init_db()
@@ -655,3 +681,4 @@ def dashboard():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
