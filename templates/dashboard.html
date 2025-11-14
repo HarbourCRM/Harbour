@@ -61,7 +61,7 @@
     }
     .add-bar {
       display: grid;
-      grid-template-columns: 1fr 2fr auto;
+      grid-template-columns: 1fr 1fr 1fr 2fr auto;
       gap: 10px;
       align-items: center;
     }
@@ -88,14 +88,16 @@
     .client-result:hover { background: #f0f0f0; }
     #selectedClient { margin-bottom: 10px; font-weight: bold; color: #333; }
 
-    /* *** FIX: CONSISTENT TEXT SIZE ONLY (NO LAYOUT CHANGE) *** */
+    /* *** FIX: CONSISTENT TEXT SIZE + 50% NOTE *** */
     .note-text,
     .trans-date,
     .trans-type,
     .trans-amount,
-    .trans-user {
+    .trans-user,
+    .trans-note {
         font-size: 13px !important;
     }
+    .trans-note { width: 50%; word-break: break-word; }
   </style>
 </head>
 <body>
@@ -117,7 +119,7 @@
   <div class="container">
     <div class="left">
 
-      <!-- CLIENT / DEBTOR INFO (TOP LEFT) -->
+      <!-- CLIENT / DEBTOR INFO -->
       {% if selected_case and case_client %}
       <div class="info-box">
         <h3>Client: {{ case_client.business_name }} (ID: {{ case_client.id }})</h3>
@@ -144,7 +146,6 @@
         {% endif %}
         <p><strong>Open Date:</strong> {{ format_date(selected_case.open_date) }}</p>
 
-        <!-- TEXT + DROPDOWN -->
         <p style="margin-top:15px; font-weight:bold;">Select another case for this client:</p>
         <select onchange="location = '?case_id=' + this.value;" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:14px;">
           {% for c in client_cases %}
@@ -156,7 +157,7 @@
       </div>
       {% endif %}
 
-      <!-- SEARCH BAR (only when no case selected) -->
+      <!-- SEARCH BAR (only when no case) -->
       {% if not selected_case %}
       <div class="section">
         <div class="search-form">
@@ -178,7 +179,7 @@
       </div>
       {% endif %}
 
-      <!-- NOTES (bottom-left, only when case selected) -->
+      <!-- NOTES (bottom-left) -->
       {% if selected_case %}
       <div class="section">
         <h3>Notes</h3>
@@ -230,7 +231,7 @@
     <!-- RIGHT PANEL -->
     <div class="right">
 
-           <!-- TRANSACTIONS -->
+      <!-- TRANSACTIONS -->
       {% if selected_case %}
       <div class="section">
         <h3>Transactions</h3>
@@ -297,7 +298,6 @@
         <p style="text-align:center; margin-top:50px; color:#777;">No transactions yet</p>
         {% endif %}
       </div>
-      {% endif %}
 
       <!-- TOTALS -->
       <div style="padding:15px;">
@@ -338,7 +338,6 @@
       <span class="close" onclick="closeModal('caseModal')">×</span>
       <h3>Add Case</h3>
 
-      <!-- CLIENT SEARCH -->
       <div class="client-search-form">
         <select id="clientSearchField">
           <option value="client_name">Name</option>
@@ -368,7 +367,6 @@
     </div>
   </div>
 
-  <!-- API KEYS MODAL -->
   <div id="apiModal" class="modal">
     <div class="modal-content">
       <span class="close" onclick="closeModal('apiModal')">×</span>
@@ -412,7 +410,6 @@
         });
     }
 
-    // CLIENT SEARCH IN ADD CASE
     function searchClients() {
       const q = document.getElementById('clientSearchInput').value.trim();
       const field = document.getElementById('clientSearchField').value;
@@ -440,7 +437,6 @@
       document.getElementById('clientSearchInput').value = '';
     }
 
-    // API KEYS
     function generateKey() {
       fetch('/api/generate_key', {method: 'POST'})
         .then(r => r.json())
@@ -468,15 +464,9 @@
       }
     }
 
-    // Load API keys on open
-    document.getElementById('apiModal').addEventListener('click', function(e) {
-      if (e.target === this) closeModal('apiModal');
-    });
-    document.querySelector('#apiModal .close').addEventListener('click', () => closeModal('apiModal'));
     document.getElementById('apiModal').addEventListener('transitionend', function() {
       if (this.classList.contains('active')) loadApiKeys();
     });
   </script>
 </body>
 </html>
-
