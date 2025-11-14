@@ -176,11 +176,13 @@ def init_db():
     )
     ''')
 
-    # ADMIN
-    c.execute("SELECT COUNT(*) FROM users")
-    if c.fetchone()[0] == 0:
-        hashed = bcrypt.hashpw(b'admin', bcrypt.gensalt())
-        c.execute("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)", ('admin', hashed, 'admin'))
+
+# ADMIN USER — DEFAULT CREDENTIALS
+c.execute("SELECT COUNT(*) FROM users")
+if c.fetchone()[0] == 0:
+    # NEW: helmadmin / helmadmin
+    hashed = bcrypt.hashpw(b'helmadmin', bcrypt.gensalt())
+    c.execute("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)", ('helmadmin', hashed, 'admin'))
 
     # DUMMY DATA
     c.execute("SELECT COUNT(*) FROM clients")
@@ -845,3 +847,4 @@ def dashboard():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
