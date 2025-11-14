@@ -637,6 +637,9 @@ def dashboard():
                 else:
                     balance += amt
 
+    # FIX: Generate today's date in Python
+    today_str = datetime.now().strftime('%Y-%m-%d')
+
     return render_template('dashboard.html',
                            clients=clients,
                            all_cases=all_cases,
@@ -647,6 +650,7 @@ def dashboard():
                            transactions=transactions,
                            balance=balance,
                            totals=totals,
+                           today_str=today_str,        # ← NEW
                            format_date=format_date)
 
 if __name__ == '__main__':
