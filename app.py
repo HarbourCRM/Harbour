@@ -124,6 +124,8 @@ def init_db():
         transaction_date TEXT DEFAULT (date('now')),
         created_by INTEGER NOT NULL,
         note TEXT,
+        recoverable INTEGER DEFAULT 0,
+        billable INTEGER DEFAULT 0,
         FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE,
         FOREIGN KEY (created_by) REFERENCES users(id)
     )
@@ -175,6 +177,16 @@ def init_db():
         created_at TEXT DEFAULT (datetime('now'))
     )
     ''')
+
+    # === ADD NEW COLUMNS (safe on every start) ===
+    try:
+        c.execute("ALTER TABLE money ADD COLUMN recoverable INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        c.execute("ALTER TABLE money ADD COLUMN billable INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass
 
     # === ADMIN USER: helmadmin / helmadmin ===
     c.execute("SELECT COUNT(*) FROM users")
@@ -310,15 +322,23 @@ def add_case():
 def add_transaction():
     db = get_db()
     c = db.cursor()
+    trans_date = request.form.get('transaction_date') or date.today().isoformat()
+    recoverable = 1 if request.form.get('recoverable') else 0
+    billable = 1 if request.form.get('billable') else 0
+
     c.execute('''
-        INSERT INTO money (case_id, type, amount, created_by, note)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO money (case_id, type, amount, created_by, note,
+                           transaction_date, recoverable, billable)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         request.form['case_id'],
         request.form['type'],
         request.form['amount'],
         current_user.id,
-        request.form['note']
+        request.form.get('note', ''),
+        trans_date,
+        recoverable,
+        billable
     ))
     db.commit()
     return redirect(url_for('dashboard', case_id=request.form['case_id']))
@@ -542,7 +562,7 @@ def generate_key():
     c = db.cursor()
     key = str(uuid.uuid4())
     name = request.json.get('name', 'API Key')
-    c.execute("INSERT INTO api_keys (client_id, key, name) VALUES (?, ?, ?)", (1, key, name))  # client_id=1 for demo
+    c.execute("INSERT INTO api_keys (client_id, key, name) VALUES (?, ?, ?)", (1, key, name))
     db.commit()
     return jsonify({'key': key})
 
