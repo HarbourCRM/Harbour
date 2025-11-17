@@ -11,10 +11,12 @@ from weasyprint import HTML
 import uuid
 
 app = Flask(__name__)
-# DEBUG MODE — SHOWS REAL ERRORS ON SCREEN (REMOVE WHEN HAPPY)
+
 app.config['DEBUG'] = True
-app.config['TEMPLATES_AUTO_RELOAD'] = True
-app.config['EXPLAIN_TEMPLATE_LOADING'] = True
+app.config['PROPAGATE_EXCEPTIONS'] = True
+app.config['TRAP_HTTP_EXCEPTIONS'] = False
+
+
 app.secret_key = 'supersecretkey'  # You said security later
 
 DATABASE_URL = os.environ['DATABASE_URL']
@@ -683,4 +685,5 @@ def dashboard():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
