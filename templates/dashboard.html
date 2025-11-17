@@ -448,27 +448,51 @@
   </div>
 
   <!-- NEW: caseEditModal -->
-  <div id="caseEditModal" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="closeModal('caseEditModal')">×</span>
-      <h3>Edit Case Details</h3>
-      <form action="/update_case_status" method="post">
-        <input type="hidden" name="case_id" value="{{ selected_case.id }}">
-        <p><strong>Status</strong></p>
-        <select name="status" style="width:100%; padding:8px;">
-          <option value="Open" {% if selected_case.status == 'Open' %}selected{% endif %}>Open</option>
-          <option value="LBA Sent" {% if selected_case.status == 'LBA Sent' %}selected{% endif %}>LBA Sent</option>
-          <option value="Judgment" {% if selected_case.status == 'Judgment' %}selected{% endif %}>Judgment</option>
-          <option value="Closed" {% if selected_case.status == 'Closed' %}selected{% endif %}>Closed</option>
-        </select>
-        <p style="margin-top:10px;"><strong>Sub-status</strong></p>
-        <input name="substatus" value="{{ selected_case.substatus or '' }}" style="width:100%; padding:8px;">
-        <p style="margin-top:10px;"><strong>Next Action Date</strong></p>
-        <input type="date" name="next_action_date" value="{{ selected_case.next_action_date }}" style="width:100%; padding:8px;">
-        <button type="submit" class="btn full" style="margin-top:15px;">Save Changes</button>
-      </form>
+<div id="caseEditModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal('caseEditModal')">×</span>
+    <h3>Edit Case Details</h3>
+
+    <!-- CURRENT VALUES – READ-ONLY DISPLAY -->
+    <div style="background:#f8f9fa; padding:15px; border-radius:6px; margin-bottom:20px; font-size:14px;">
+      <table style="width:100%;">
+        <tr>
+          <td style="width:180px; color:#555; font-weight:bold;">Current Status</td>
+          <td style="font-weight:bold; color:#d35400;">{{ selected_case.status or '—' }}</td>
+        </tr>
+        <tr>
+          <td style="color:#555; font-weight:bold;">Sub-status</td>
+          <td>{{ selected_case.substatus or '—' }}</td>
+        </tr>
+        <tr>
+          <td style="color:#555; font-weight:bold;">Next Action Date</td>
+          <td>{% if selected_case.next_action_date %}{{ selected_case.next_action_date }}{% else %}—{% endif %}</td>
+        </tr>
+      </table>
     </div>
+
+    <!-- EDITABLE FIELDS BELOW -->
+    <form action="/update_case_status" method="post">
+      <input type="hidden" name="case_id" value="{{ selected_case.id }}">
+
+      <p><strong>New Status</strong></p>
+      <select name="status" style="width:100%; padding:8px; font-size:14px;">
+        <option value="Open" {% if selected_case.status == 'Open' %}selected{% endif %}>Open</option>
+        <option value="LBA Sent" {% if selected_case.status == 'LBA Sent' %}selected{% endif %}>LBA Sent</option>
+        <option value="Judgment" {% if selected_case.status == 'Judgment' %}selected{% endif %}>Judgment</option>
+        <option value="Closed" {% if selected_case.status == 'Closed' %}selected{% endif %}>Closed</option>
+      </select>
+
+      <p style="margin-top:15px;"><strong>Sub-status</strong></p>
+      <input name="substatus" value="{{ selected_case.substatus or '' }}" style="width:100%; padding:8px; font-size:14px;">
+
+      <p style="margin-top:15px;"><strong>Next Action Date</strong></p>
+      <input type="date" name="next_action_date" value="{{ selected_case.next_action_date }}" style="width:100%; padding:8px; font-size:14px;">
+
+      <button type="submit" class="btn full" style="margin-top:20px;">Save Changes</button>
+    </form>
   </div>
+</div>
 
   <script>
     function openModal(id) { document.getElementById(id).classList.add('active'); }
@@ -616,6 +640,7 @@ window.addEventListener('error', function(e) {
   
 </body>
 </html>
+
 
 
 
