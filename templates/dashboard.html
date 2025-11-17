@@ -228,13 +228,15 @@
             <tbody>
               {% for n in notes %}
               <tr>
-              <td>{{ n.created_at.strftime('%d/%m/%Y') if n.created_at else '' }}</td>
+            <td>{{ n.created_at.strftime('%d/%m/%Y %H:%M') if n.created_at else '' }}</td>
                 <td>{{ n.type }}</td>
                 <td class="note-text">{{ n.note }}</td>
                 <td>{{ n.username }}</td>
                 <td class="note-actions">
-                  <button class="btn-small" onclick="editNote({{ n.id }}, '{{ n.type }}', '{{ n.note|escape }}')">Edit</button>
-                  <button class="btn-small delete" onclick="deleteNote({{ n.id }})">Del</button>
+<div style="display: flex; gap: 8px;">
+    <button onclick="editNote({{ n.id }})" style="background: orange; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">Edit</button>
+    <button onclick="deleteNote({{ n.id }})" style="background: #d32f2f; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">Delete</button>
+</div>
                 </td>
               </tr>
               {% endfor %}
@@ -569,4 +571,5 @@
   </script>
 </body>
 </html>
+
 
