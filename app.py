@@ -17,9 +17,10 @@ app.secret_key = 'supersecretkey'
 # === POSTGRESQL (Render) ===
 DATABASE_URL = os.environ['DATABASE_URL']
 
-def init_db():
-    conn = psycopg.connect(DATABASE_URL)
-    c = conn.cursor()
+def get_db():
+    if 'db' not in g:
+        g.db = psycopg.connect(DATABASE_URL, row_factory=dict_row)
+    return g.db
 
 @app.teardown_appcontext
 def close_db(e=None):
@@ -36,9 +37,9 @@ def format_date(date_str):
     except:
         return date_str
 
-# === INIT_DB (PostgreSQL) ===
+# === INIT_DB (psycopg3) ===
 def init_db():
-    conn = psycopg2.connect(DATABASE_URL)
+    conn = psycopg.connect(DATABASE_URL)
     c = conn.cursor()
 
     c.execute('''
@@ -146,81 +147,6 @@ def init_db():
         c.execute("INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s)",
                   ('helmadmin', hashed, 'admin'))
 
-    # === DUMMY DATA ===
-    c.execute("SELECT COUNT(*) FROM clients")
-    if c.fetchone()[0] == 0:
-        print("INSERTING DUMMY DATA...")
-        clients = [
-            ("Limited", "Acme Corp", "John", "Doe", "01234 567890", "john@acme.com", 8.5),
-            ("Sole Trader", "Bob's Plumbing", "Bob", "Smith", "07700 900123", "bob@plumb.co.uk", 7.0),
-            ("Partnership", "Green & Co", "Sarah", "Green", "020 7946 0001", "sarah@green.co", 6.5),
-            ("Individual", "Freelance Designs", "Alex", "Taylor", "07890 123456", "alex@design.com", 9.0),
-            ("Limited", "Tech Solutions Ltd", "Mike", "Brown", "0113 496 0002", "mike@techsol.co.uk", 8.0)
-        ]
-        client_ids = []
-        for cl in clients:
-            c.execute('''
-                INSERT INTO clients (business_type, business_name, contact_first, contact_last, phone, email, default_interest_rate)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            ''', cl)
-            client_ids.append(c.lastrowid)
-
-        debtor_types = ["Individual", "Sole Trader", "Limited", "Partnership"]
-        statuses = ["Open", "On Hold", "Closed"]
-
-        case_counter = 1
-
-        for client_id in client_ids:
-            for i in range(5):
-                debtor_type = random.choice(debtor_types)
-                first = random.choice(["Emma", "James", "Olivia", "Liam", "Noah", "Ava"])
-                last = random.choice(["Wilson", "Davis", "Martinez", "Lee", "Clark", "Walker"])
-                business = f"{first} {last} Ltd" if debtor_type in ["Limited", "Partnership"] else None
-                next_action = (datetime.now() + timedelta(days=random.randint(1, 30))).strftime('%Y-%m-%d')
-
-                c.execute('''
-                    INSERT INTO cases
-                    (client_id, debtor_business_type, debtor_business_name, debtor_first, debtor_last,
-                     phone, email, status, substatus, next_action_date)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ''', (client_id, debtor_type, business, first, last,
-                      f"07{random.randint(100,999)} {random.randint(100000,999999)}",
-                      f"{first.lower()}.{last.lower()}@example.com",
-                      random.choice(statuses),
-                      random.choice(["Awaiting Docs", "In Court", None]),
-                      next_action))
-                case_id = c.lastrowid
-
-                if case_counter == 1:
-                    print(f"Adding 30 notes + 30 transactions to Case ID 1")
-                    for n in range(30):
-                        note_type = random.choice(["General", "Inbound Call", "Outbound Call"])
-                        note_text = f"Auto-generated note {n+1}/30 for testing scroll."
-                        c.execute("INSERT INTO notes (case_id, type, note, created_by) VALUES (%s, %s, %s, 1)",
-                                  (case_id, note_type, note_text))
-
-                    for t in range(30):
-                        typ = random.choice(["Invoice", "Payment", "Charge", "Interest"])
-                        amt = round(random.uniform(50, 5000), 2)
-                        trans_date = (datetime.now() - timedelta(days=random.randint(0, 365))).strftime('%Y-%m-%d')
-                        note = f"Test trans {t+1}" if t % 5 == 0 else ""
-                        c.execute('''
-                            INSERT INTO money (case_id, type, amount, created_by, note, transaction_date)
-                            VALUES (%s, %s, %s, 1, %s, %s)
-                        ''', (case_id, typ, amt, note, trans_date))
-                else:
-                    for _ in range(random.randint(1, 4)):
-                        typ = random.choice(["Invoice", "Payment", "Charge", "Interest"])
-                        amt = round(random.uniform(100, 5000), 2)
-                        c.execute("INSERT INTO money (case_id, type, amount, created_by) VALUES (%s, %s, %s, 1)",
-                                  (case_id, typ, amt))
-                    for _ in range(random.randint(0, 3)):
-                        note_type = random.choice(["General", "Inbound Call", "Outbound Call"])
-                        c.execute("INSERT INTO notes (case_id, type, note, created_by) VALUES (%s, %s, %s, 1)",
-                                  (case_id, note_type, f"Sample {note_type.lower()} note"))
-
-                case_counter += 1
-
     conn.commit()
     conn.close()
 
@@ -244,7 +170,7 @@ def load_user(user_id):
     row = c.fetchone()
     return User(row['id'], row['username'], row['role']) if row else None
 
-# === ROUTES (same as before, just %s instead of ?) ===
+# === ROUTES ===
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -699,4 +625,3 @@ def dashboard():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
