@@ -228,7 +228,7 @@
             <tbody>
               {% for n in notes %}
               <tr>
-                <td>{{ format_date(n.created_at.split(' ')[0]) }}</td>
+              <td>{{ n.created_at.strftime('%d/%m/%Y') if n.created_at else '' }}</td>
                 <td>{{ n.type }}</td>
                 <td class="note-text">{{ n.note }}</td>
                 <td>{{ n.username }}</td>
@@ -569,3 +569,4 @@
   </script>
 </body>
 </html>
+
