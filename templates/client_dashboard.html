@@ -6,22 +6,20 @@
   <link rel="icon" href="/static/favicon.png" type="image/png">
   <style>
     body { margin:0; font-family: Arial; background: #f9f9f9; font-size: 14px; }
-    h1, h2, h3, h4, h5, h6 { font-size: 1.4em; margin: 0 0 8px; color: #333; font-weight: bold; }
     .header { height: 80px; background: rgb(91, 103, 112); display: flex; align-items: center; justify-content: space-between; padding: 0 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     .header img { height: 45px; }
     .header .btn-group { display: flex; gap: 10px; }
     .btn { background: rgb(227,82,5); color: white; border: none; padding: 8px 14px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px; }
     .container { padding: 20px; }
     .info-box { background: #eef5ff; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-    table { width: 100%; border-collapse: collapse; background: white; }
-    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
+    table { width: 100%; border-collapse: collapse; background: white; margin-top: 20px; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
     th { background: #f5f5f5; }
     tr:hover { background: #f9f9f9; }
     .case-row { cursor: pointer; }
-    .balance-positive { color: #d00; font-weight: bold; }
-    .balance-zero { color: #666; }
-    .balance-negative { color: green; font-weight: bold; }
-    .back-btn { margin-top: 20px; }
+    .balance { font-weight: bold; text-align: right; }
+    .positive { color: #d00; }
+    .negative { color: green; }
     a { color: rgb(227,82,5); text-decoration: none; }
     a:hover { text-decoration: underline; }
   </style>
@@ -32,7 +30,7 @@
     <img src="/static/helm-logo.png" alt="Helm">
     <div class="btn-group">
       <button class="btn" onclick="location.href='/'">← Back to Dashboard</button>
-      <button class="btn" onclick="openModal('caseModal'); prefillClient({{ client.id }}, '{{ client.business_name|escapejs }}')">
+      <button class="btn" onclick="openModal('caseModal'); document.getElementById('selectedClientId').value={{ client.id }}; document.getElementById('selectedClient').innerHTML='<strong>Selected: [{{ client.id }}] {{ client.business_name }}</strong>'">
         + Add New Case for {{ client.business_name }}
       </button>
     </div>
@@ -40,15 +38,13 @@
   </div>
 
   <div class="container">
-
     <div class="info-box">
-      <h2>Client: {{ client.business_name }} (ID: {{ client.id }})</h2>
+      <h2>{{ client.business_name }} (ID: {{ client.id }})</h2>
       <p><strong>Contact:</strong> {{ client.contact_first }} {{ client.contact_last }} | 
          <a href="tel:{{ client.phone }}">{{ client.phone }}</a> | 
          <a href="mailto:{{ client.email }}">{{ client.email }}</a>
       </p>
-      <p><strong>BACS Details:</strong> {{ client.bacs_details|default('—') }}</p>
-      <p><strong>Default Interest Rate:</strong> {{ client.default_interest_rate }}%</p>
+      <p><strong>BACS:</strong> {{ client.bacs_details|default('—') }}</p>
     </div>
 
     <h3>All Cases ({{ cases|length }})</h3>
@@ -64,12 +60,32 @@
           <th>Sub-status</th>
           <th>Open Date</th>
           <th>Next Action</th>
-          <th style="text-align:right;">Balance</th>
+          <th class="balance">Balance</th>
         </tr>
       </thead>
       <tbody>
         {% for case in cases %}
         <tr class="case-row" onclick="location.href='/?case_id={{ case.id }}'">
           <td><strong>{{ case.id }}</strong></td>
-          <td>{{ case.debtor_business_name|default(case.debtor_first ~ ' ' ~ case.debtor_last) }}</td>
-          <td>{{ case.debtor_business_type|default
+          <td>{{ case.debtor_name }}</td>
+          <td>{{ case.debtor_business_type|default('Individual') }}</td>
+          <td>{{ case.status|default('Open') }}</td>
+          <td>{{ case.substatus|default('') }}</td>
+          <td>{{ format_date(case.open_date) }}</td>
+          <td>{{ format_date(case.next_action_date) }}</td>
+          <td class="balance {% if case.balance > 0 %}positive{% elif case.balance < 0 %}negative{% endif %}">
+            £{{ "%.2f"|format(case.balance) }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="text-align:center; color:#777; padding:50px 0; font-style:italic;">
+      No cases yet for this client
+    </p>
+    {% endif %}
+  </div>
+
+</body>
+</html>
