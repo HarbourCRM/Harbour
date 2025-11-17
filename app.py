@@ -116,21 +116,20 @@ def init_db():
     )
     ''')
 
-    # ADMIN USER
+    # Admin user
     c.execute("SELECT COUNT(*) FROM users WHERE username = 'helmadmin'")
     if c.fetchone()[0] == 0:
-        print("Creating admin: helmadmin")
+        print("Creating admin: helmadmin / helmadmin")
         hashed = bcrypt.hashpw(b'helmadmin', bcrypt.gensalt())
         c.execute("INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s)",
                   ('helmadmin', hashed, 'admin'))
 
-    # CRITICAL FIX: Add missing columns if they don't exist
+    # Add missing columns
     for col in ['postcode', 'email', 'phone']:
         try:
             c.execute(f"ALTER TABLE cases ADD COLUMN IF NOT EXISTS {col} TEXT")
-            print(f"Added column: {col}")
         except:
-            pass  # already exists
+            pass
 
     conn.commit()
     conn.close()
@@ -230,8 +229,7 @@ def add_transaction():
     billable = 1 if request.form.get('billable') else 0
 
     c.execute('''
-        INSERT INTO money (case_id, type, amount, created_by, note,
-                           transaction_date, recoverable, billable)
+        INSERT INTO money (case_id, type, amount, created_by, note, transaction_date, recoverable, billable)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     ''', (
         request.form['case_id'],
@@ -325,8 +323,233 @@ def client_search():
     results = [{'id': r['id'], 'name': r['name']} for r in c.fetchall()]
     return jsonify(results)
 
-# === ALL OTHER ROUTES (report, export, API, edit/delete, dashboard) ===
-# [Keep exactly as before — they work]
+@app.route('/report')
+@login_required
+def report():
+    client_code = request.args.get('client_code')
+    report_html = ''
+    if client_code:
+        db = get_db()
+        c = db.cursor()
+        c.execute("SELECT id, business_name FROM clients WHERE id = %s", (client_code,))
+        client = c.fetchone()
+        if client:
+            c.execute("""
+                SELECT s.id as case_id, s.debtor_business_name, s.debtor_first, s.debtor_last,
+                       m.type, m.amount
+                FROM cases s
+                LEFT JOIN money m ON s.id = m.case_id
+                WHERE s.client_id = %s
+            """, (client_code,))
+            rows = c.fetchall()
+            cases = {}
+            for r in rows:
+                case_id = r['case_id']
+                if case_id not in cases:
+                    debtor = r['debtor_business_name'] or f"{r['debtor_first']} {r['debtor_last']}"
+                    cases[case_id] = {'debtor': debtor, 'Invoice': 0, 'Payment': 0, 'Charge': 0, 'Interest': 0}
+                if r['type']:
+                    cases[case_id][r['type']] += r['amount']
+            html = f"<h2>Client: {client['business_name']} (ID: {client['id']})</h2><table border='1' style='width:100%; border-collapse:collapse; font-family:Arial; font-size:12px;'><tr style='background:#ddd;'><th>Case ID</th><th>Debtor</th><th>Invoice</th><th>Payment</th><th>Charge</th><th>Interest</th><th>Balance</th></tr>"
+            for case_id, d in cases.items():
+                balance = d['Invoice'] + d['Charge'] + d['Interest'] - d['Payment']
+                html += f"<tr><td>{case_id}</td><td>{d['debtor']}</td><td>£{d['Invoice']:.2f}</td><td>£{d['Payment']:.2f}</td><td>£{d['Charge']:.2f}</td><td>£{d['Interest']:.2f}</td><td>£{balance:.2f}</td></tr>"
+            grand = {t: sum(c[t] for c in cases.values()) for t in ['Invoice','Payment','Charge','Interest']}
+            grand_balance = grand['Invoice'] + grand['Charge'] + grand['Interest'] - grand['Payment']
+            html += f"<tr style='font-weight:bold; background:#eee;'><td colspan='2'>TOTALS</td><td>£{grand['Invoice']:.2f}</td><td>£{grand['Payment']:.2f}</td><td>£{grand['Charge']:.2f}</td><td>£{grand['Interest']:.2f}</td><td>£{grand_balance:.2f}</td></tr></table>"
+            report_html = html
+    return render_template('report.html', report_html=report_html, client_code=client_code)
+
+@app.route('/export_excel')
+@login_required
+def export_excel():
+    client_code = request.args.get('client_code')
+    db = get_db()
+    c = db.cursor()
+    c.execute("SELECT id, business_name FROM clients WHERE id = %s", (client_code,))
+    client = c.fetchone()
+    if not client:
+        return "Client not found", 404
+
+    c.execute("""
+        SELECT s.id as case_id, s.debtor_business_name, s.debtor_first, s.debtor_last,
+               m.type, m.amount
+        FROM cases s
+        LEFT JOIN money m ON s.id = m.case_id
+        WHERE s.client_id = %s
+    """, (client_code,))
+    rows = c.fetchall()
+
+    cases = {}
+    for r in rows:
+        case_id = r['case_id']
+        if case_id not in cases:
+            debtor = r['debtor_business_name'] or f"{r['debtor_first']} {r['debtor_last']}"
+            cases[case_id] = {'debtor': debtor, 'Invoice': 0, 'Payment': 0, 'Charge': 0, 'Interest': 0}
+        if r['type']:
+            cases[case_id][r['type']] += r['amount']
+
+    data = []
+    for case_id, d in cases.items():
+        balance = d['Invoice'] + d['Charge'] + d['Interest'] - d['Payment']
+        data.append([case_id, d['debtor'], d['Invoice'], d['Payment'], d['Charge'], d['Interest'], balance])
+
+    df = pd.DataFrame(data, columns=['Case ID', 'Debtor', 'Invoice', 'Payment', 'Charge', 'Interest', 'Balance'])
+    df.loc['Total'] = ['', 'TOTALS', df['Invoice'].sum(), df['Payment'].sum(), df['Charge'].sum(), df['Interest'].sum(), df['Balance'].sum()]
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False)
+    output.seek(0)
+    return send_file(output, download_name=f"report_client_{client_code}.xlsx", as_attachment=True)
+
+@app.route('/export_pdf')
+@login_required
+def export_pdf():
+    client_code = request.args.get('client_code')
+    db = get_db()
+    c = db.cursor()
+    c.execute("SELECT id, business_name FROM clients WHERE id = %s", (client_code,))
+    client = c.fetchone()
+    if not client:
+        return "Client not found", 404
+
+    c.execute("""
+        SELECT s.id as case_id, s.debtor_business_name, s.debtor_first, s.debtor_last,
+               m.type, m.amount
+        FROM cases s
+        LEFT JOIN money m ON s.id = m.case_id
+        WHERE s.client_id = %s
+    """, (client_code,))
+    rows = c.fetchall()
+
+    cases = {}
+    for r in rows:
+        case_id = r['case_id']
+        if case_id not in cases:
+            debtor = r['debtor_business_name'] or f"{r['debtor_first']} {r['debtor_last']}"
+            cases[case_id] = {'debtor': debtor, 'Invoice': 0, 'Payment': 0, 'Charge': 0, 'Interest': 0}
+        if r['type']:
+            cases[case_id][r['type']] += r['amount']
+
+    html = f"""
+    <h1>Client Report: {client['business_name']} (ID: {client['id']})</h1>
+    <table border="1" style="width:100%; border-collapse:collapse; font-family:Arial; font-size:12px;">
+        <tr style="background:#ddd;">
+            <th>Case ID</th><th>Debtor</th><th>Invoice</th><th>Payment</th><th>Charge</th><th>Interest</th><th>Balance</th>
+        </tr>
+    """
+    for case_id, d in cases.items():
+        balance = d['Invoice'] + d['Charge'] + d['Interest'] - d['Payment']
+        html += f"""
+        <tr>
+            <td>{case_id}</td>
+            <td>{d['debtor']}</td>
+            <td>£{d['Invoice']:.2f}</td>
+            <td>£{d['Payment']:.2f}</td>
+            <td>£{d['Charge']:.2f}</td>
+            <td>£{d['Interest']:.2f}</td>
+            <td>£{balance:.2f}</td>
+        </tr>
+        """
+    grand = {t: sum(c[t] for c in cases.values()) for t in ['Invoice','Payment','Charge','Interest']}
+    grand_balance = grand['Invoice'] + grand['Charge'] + grand['Interest'] - grand['Payment']
+    html += f"""
+        <tr style="font-weight:bold; background:#eee;">
+            <td colspan="2">TOTALS</td>
+            <td>£{grand['Invoice']:.2f}</td>
+            <td>£{grand['Payment']:.2f}</td>
+            <td>£{grand['Charge']:.2f}</td>
+            <td>£{grand['Interest']:.2f}</td>
+            <td>£{grand_balance:.2f}</td>
+        </tr>
+    </table>
+    """
+
+    pdf = HTML(string=html).write_pdf()
+    response = make_response(pdf)
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'attachment; filename=report_client_{client_code}.pdf'
+    return response
+
+@app.route('/api/generate_key', methods=['POST'])
+@login_required
+def generate_key():
+    db = get_db()
+    c = db.cursor()
+    key = str(uuid.uuid4())
+    name = request.json.get('name', 'API Key')
+    c.execute("INSERT INTO api_keys (client_id, key, name) VALUES (1, %s, %s)", (key, name))
+    db.commit()
+    return jsonify({'key': key})
+
+@app.route('/api/keys')
+@login_required
+def list_keys():
+    db = get_db()
+    c = db.cursor()
+    c.execute("SELECT id, name FROM api_keys WHERE active = 1")
+    return jsonify([{'id': r['id'], 'name': r['name']} for r in c.fetchall()])
+
+@app.route('/api/revoke_key/<int:key_id>', methods=['POST'])
+@login_required
+def revoke_key(key_id):
+    db = get_db()
+    c = db.cursor()
+    c.execute("UPDATE api_keys SET active = 0 WHERE id = %s", (key_id,))
+    db.commit()
+    return '', 204
+
+@app.route('/edit_note', methods=['POST'])
+@login_required
+def edit_note():
+    db = get_db()
+    c = db.cursor()
+    c.execute("UPDATE notes SET type = %s, note = %s WHERE id = %s", 
+              (request.form['type'], request.form['note'], request.form['note_id']))
+    db.commit()
+    return redirect(url_for('dashboard', case_id=request.form.get('case_id') or ''))
+
+@app.route('/delete_note/<int:note_id>', methods=['POST'])
+@login_required
+def delete_note(note_id):
+    db = get_db()
+    c = db.cursor()
+    c.execute("DELETE FROM notes WHERE id = %s", (note_id,))
+    db.commit()
+    return '', 204
+
+@app.route('/get_transaction/<int:trans_id>')
+@login_required
+def get_transaction(trans_id):
+    db = get_db()
+    c = db.cursor()
+    c.execute("SELECT * FROM money WHERE id = %s", (trans_id,))
+    t = c.fetchone()
+    return jsonify(dict(t))
+
+@app.route('/edit_transaction', methods=['POST'])
+@login_required
+def edit_transaction():
+    db = get_db()
+    c = db.cursor()
+    recoverable = 1 if request.form.get('recoverable') else 0
+    billable = 1 if request.form.get('billable') else 0
+    c.execute('''
+        UPDATE money SET amount = %s, note = %s, recoverable = %s, billable = %s
+        WHERE id = %s
+    ''', (request.form['amount'], request.form.get('note', ''), recoverable, billable, request.form['trans_id']))
+    db.commit()
+    return redirect(url_for('dashboard', case_id=request.form.get('case_id') or ''))
+
+@app.route('/delete_transaction/<int:trans_id>', methods=['POST'])
+@login_required
+def delete_transaction(trans_id):
+    db = get_db()
+    c = db.cursor()
+    c.execute("DELETE FROM money WHERE id = %s", (trans_id,))
+    db.commit()
+    return '', 204
 
 @app.route('/')
 @app.route('/dashboard')
