@@ -6,114 +6,68 @@
   <link rel="icon" href="/static/favicon.png" type="image/png">
   <style>
     body { margin:0; font-family: Arial; background: #f9f9f9; font-size: 14px; }
-    h1, h2, h3, h4, h5, h6 { font-size: 1.4em; margin: 0 0 8px; color: #333; font-weight: bold; }
-    .header { height: 80px; background: rgb(91, 103, 112); display: flex; align-items: center; justify-content: space-between; padding: 0 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    .header img { height: 45px; }
-    .header .btn-group { display: flex; gap: 10px; }
-    .btn { background: rgb(227,82,5); color: white; border: none; padding: 8px 14px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px; }
-    .container { display: flex; height: calc(100vh - 80px); }
-    .left { width: 66%; display: flex; flex-direction: column; }
-    .right { width: 34%; background: #fff; border-left: 1px solid #ddd; padding: 15px; display: flex; flex-direction: column; }
-    .info-box { background: #eef5ff; padding: 18px; border-radius: 8px; margin: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-    .info-box p { margin: 4px 0; }
-    .section { padding: 15px; border-bottom: 1px solid #eee; display: flex; flex-direction: column; height: 100%; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 4px 8px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
-    th { background: #f5f5f5; }
-    .note-date, .note-type, .note-user { width: 12%; font-size: 0.85em; color: #555; }
-    .note-text { width: 64%; }
-    .trans-date, .trans-type, .trans-amount, .trans-user { font-size: 0.9em; }
-    .search-form { display: flex; gap: 8px; margin-bottom: 15px; align-items: center; }
-    .search-form select, .search-form input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
-    .search-form select { width: 150px; }
-    .search-form input { flex: 1; }
-    .result-row { cursor: pointer; }
-    .result-row:hover { background: #f0f0f0; }
-    .no-results { color: #777; font-style: italic; padding: 10px 0; }
-    .totals { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-    .total-box { background: #eef; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; }
-    .balance { font-weight: bold; font-size: 1.2em; color: #d00; margin-top: 15px; }
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
-    .modal.active { display: flex; }
-    .modal-content { background: white; padding: 20px; border-radius: 8px; width: 520px; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-    .close { float: right; font-size: 1.6em; cursor: pointer; color: #999; }
-    .close:hover { color: #000; }
-    .modal h3 { margin: 0 0 15px; }
-    .modal form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .modal .full { grid-column: 1 / -1; }
-    .modal button { grid-column: 1 / -1; margin-top: 10px; }
+    h1,h2,h3,h4,h5,h6 { font-size:1.4em; margin:0 0 8px; color:#333; font-weight:bold; }
+    .header { height:80px; background:rgb(91,103,112); display:flex; align-items:center; justify-content:space-between; padding:0 30px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+    .header img { height:45px; }
+    .header .btn-group { display:flex; gap:10px; }
+    .btn { background:rgb(227,82,5); color:white; border:none; padding:8px 14px; border-radius:5px; cursor:pointer; font-weight:bold; font-size:14px; }
+    .container { display:flex; height:calc(100vh - 80px); }
+    .left { width:60%; display:flex; flex-direction:column; }
+    .right { width:40%; background:#fff; border-left:1px solid #ddd; padding:15px; display:flex; flex-direction:column; }
+    .info-box { background:#eef5ff; padding:18px; border-radius:8px; margin:15px; box-shadow:0 2px 6px rgba(0,0,0,0.1); }
+    .info-box p { margin:4px 0; }
+    .section { padding:15px; border-bottom:1px solid #eee; display:flex; flex-direction:column; height:100%; }
+    table { width:100%; border-collapse:collapse; }
+    th,td { padding:4px 8px; text-align:left; border-bottom:1px solid #eee; font-size:14px; }
+    th { background:#f5f5f5; }
 
-    /* LINKS = ORANGE */
-    .info-box a {
-      color: rgb(227,82,5) !important;
-      text-decoration: none;
-    }
-    .info-box a:hover {
-      text-decoration: underline;
-    }
+    /* TIGHTER ROWS & SMALLER TEXT */
+    .notes-scroll table, .transactions-scroll table { font-size:13px; }
+    .notes-scroll th, .notes-scroll td,
+    .transactions-scroll th, .transactions-scroll td { padding:6px 8px !important; }
+    .note-text, .trans-note { font-size:13px; line-height:1.3; }
 
-    /* PINNED ADD BARS */
-    .add-bar-container {
-      position: sticky;
-      bottom: 0;
-      background: #f8f9fa;
-      border-top: 1px solid #ddd;
-      padding: 12px 15px;
-    }
-    .add-bar {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr 2fr auto;
-      gap: 10px;
-      align-items: center;
-    }
-    .add-bar select, .add-bar input, .add-bar textarea, .add-bar button {
-      height: 40px;
-      padding: 0 10px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 14px;
-    }
-    .add-bar select { width: 100%; }
-    .add-bar input[type="number"] { width: 100px; }
-    .add-bar textarea { resize: none; height: 40px; display: flex; align-items: center; }
-    .add-bar textarea::placeholder { color: #777; font-size: 14px; line-height: 40px; }
-    .add-bar button { background: rgb(227,82,5); color: white; font-weight: bold; }
-
-    /* NOTES ADD-BAR: WIDE TEXT */
-    .notes-add-bar {
-      grid-template-columns: 7.5rem 1fr 4rem !important;
-    }
-    .notes-add-bar button { width: 4rem !important; }
-
-    /* CLIENT SEARCH IN ADD CASE */
-    .client-search-form { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
-    .client-search-form select, .client-search-form input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
-    .client-search-form select { width: 130px; }
-    .client-search-form input { flex: 1; }
-    .client-results { max-height: 150px; overflow-y: auto; border: 1px solid #ddd; background: white; margin-bottom: 10px; }
-    .client-result { padding: 8px; cursor: pointer; border-bottom: 1px solid #eee; }
-    .client-result:hover { background: #f0f0f0; }
-    #selectedClient { margin-bottom: 10px; font-weight: bold; color: #333; }
-
-    /* LOCAL SCROLLING */
-    .notes-scroll, .transactions-scroll {
-      flex: 1;
-      overflow-y: auto;
-      border: 1px solid #eee;
-      border-radius: 4px;
-      padding: 8px;
-      background: #fff;
-      margin-top: 10px;
-    }
-
-    /* R/B & ACTIONS */
-    .trans-rb, .note-actions, .trans-actions { width: 30px; text-align: center; font-size: 12px; }
-    .grey-charge { color: #999 !important; }
-    .grey-charge td { color: #999 !important; }
-    .btn-small { font-size: 11px; padding: 2px 6px; margin: 0 2px; }
-    .btn-small.delete { background: #d9534f; }
-    .pagination { text-align: center; margin: 10px 0; }
-    .pagination a { color: rgb(227,82,5); text-decoration: none; margin: 0 8px; font-weight: bold; }
+    .note-date,.note-type,.note-user { width:12%; font-size:0.85em; color:#555; }
+    .note-text { width:64%; }
+    .search-form { display:flex; gap:8px; margin-bottom:15px; align-items:center; }
+    .search-form input { padding:8px; border:1px solid #ccc; border-radius:4px; font-size:14px; flex:1; }
+    .result-row { cursor:pointer; }
+    .result-row:hover { background:#f0f0f0; }
+    .no-results { color:#777; font-style:italic; padding:10px 0; }
+    .totals { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:15px; }
+    .total-box { background:#eef; padding:10px; border-radius:5px; text-align:center; font-weight:bold; }
+    .balance { font-weight:bold; font-size:1.2em; color:#d00; margin-top:15px; }
+    .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:1000; }
+    .modal.active { display:flex; }
+    .modal-content { background:white; padding:20px; border-radius:8px; width:520px; max-height:80vh; overflow-y:auto; box-shadow:0 4px 12px rgba(0,0,0,0.2); }
+    .close { float:right; font-size:1.6em; cursor:pointer; color:#999; }
+    .close:hover { color:#000; }
+    .modal h3 { margin:0 0 15px; }
+    .modal form { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .modal .full { grid-column:1/-1; }
+    .modal button { grid-column:1/-1; margin-top:10px; }
+    .info-box a { color:rgb(227,82,5)!important; text-decoration:none; }
+    .info-box a:hover { text-decoration:underline; }
+    .add-bar-container { position:sticky; bottom:0; background:#f8f9fa; border-top:1px solid #ddd; padding:12px 15px; }
+    .add-bar { display:grid; grid-template-columns:1fr 1fr 1fr 2fr auto; gap:10px; align-items:center; }
+    .add-bar select,.add-bar input,.add-bar textarea,.add-bar button { height:40px; padding:0 10px; border:1px solid #ccc; border-radius:4px; font-size:14px; }
+    .add-bar button { background:rgb(227,82,5); color:white; font-weight:bold; }
+    .notes-add-bar { grid-template-columns:7.5rem 1fr 4rem!important; }
+    .notes-add-bar button { width:4rem!important; }
+    .client-search-form { display:flex; gap:8px; margin-bottom:10px; align-items:center; }
+    .client-search-form select,.client-search-form input { padding:8px; border:1px solid #ccc; border-radius:4px; font-size:14px; }
+    .client-search-form select { width:130px; }
+    .client-search-form input { flex:1; }
+    .client-results { max-height:150px; overflow-y:auto; border:1px solid #ddd; background:white; margin-bottom:10px; }
+    .client-result { padding:8px; cursor:pointer; border-bottom:1px solid #eee; }
+    .client-result:hover { background:#f0f0f0; }
+    #selectedClient { margin-bottom:10px; font-weight:bold; color:#333; }
+    .notes-scroll,.transactions-scroll { flex:1; overflow-y:auto; border:1px solid #eee; border-radius:4px; padding:8px; background:#fff; margin-top:10px; }
+    .trans-rb,.note-actions,.trans-actions { width:30px; text-align:center; font-size:12px; }
+    .grey-charge { color:#999!important; }
+    .grey-charge td { color:#999!important; }
+    .btn-small { font-size:11px; padding:2px 6px; margin:0 2px; }
+    .btn-small.delete { background:#d9534f; }
   </style>
 </head>
 <body>
@@ -138,7 +92,8 @@
       <!-- CLIENT / DEBTOR INFO -->
       {% if selected_case and case_client %}
       <div class="info-box">
-        <h3>Client: <a href="/client/{{ case_client.id }}">{{ case_client.business_name }}</a> (ID: {{ case_client.id }})</h3>
+        <h3>Client: {{ case_client.business_name }}</h3>
+        <p style="margin:-5px 0 10px; color:#666; font-size:0.9em;">ID: {{ case_client.id }}</p>
         <p><strong>Contact:</strong> 
           {{ case_client.contact_first }} {{ case_client.contact_last }} | 
           <a href="tel:{{ case_client.phone }}">{{ case_client.phone }}</a> | 
@@ -146,7 +101,8 @@
         </p>
         <p><strong>BACS:</strong> {{ case_client.bacs_details or '—' }}</p>
         <hr>
-        <h3>Debtor: {{ selected_case.debtor_business_name or selected_case.debtor_first + ' ' + selected_case.debtor_last }} (ID: {{ selected_case.id }})</h3>
+        <h3>Debtor: {{ selected_case.debtor_business_name or selected_case.debtor_first + ' ' + selected_case.debtor_last }}</h3>
+        <p style="margin:-5px 0 10px; color:#666; font-size:0.9em;">Case ID: {{ selected_case.id }}</p>
         <p><strong>Type:</strong> {{ selected_case.debtor_business_type }}</p>
         <p><strong>Contact:</strong> 
           {{ selected_case.debtor_first }} {{ selected_case.debtor_last }} | 
@@ -154,40 +110,17 @@
           <a href="mailto:{{ selected_case.email }}">{{ selected_case.email }}</a>
         </p>
 
-        <!-- NEW: STATUS + SUB-STATUS -->
-        <form action="/update_case_status" method="post" style="margin-top:15px;">
-          <input type="hidden" name="case_id" value="{{ selected_case.id }}">
-          <div style="display:grid; grid-template-columns:1fr 1fr auto; gap:10px;">
-            <select name="status">
-              <option value="Open" {% if selected_case.status == 'Open' %}selected{% endif %}>Open</option>
-              <option value="LBA Sent" {% if selected_case.status == 'LBA Sent' %}selected{% endif %}>LBA Sent</option>
-              <option value="Judgment" {% if selected_case.status == 'Judgment' %}selected{% endif %}>Judgment</option>
-              <option value="Closed" {% if selected_case.status == 'Closed' %}selected{% endif %}>Closed</option>
-            </select>
-            <input name="substatus" value="{{ selected_case.substatus or '' }}" placeholder="Sub-status">
-            <button type="submit" class="btn">Update</button>
-          </div>
-        </form>
+        <button class="btn" onclick="openModal('caseEditModal')" style="margin-top:15px;">Edit Case Details</button>
 
-        {% if selected_case.substatus %}
-          <p><strong>Substatus:</strong> {{ selected_case.substatus }}</p>
-        {% endif %}
-        {% if selected_case.next_action_date %}
-          <p><strong>Next Action:</strong> {{ format_date(selected_case.next_action_date) }}</p>
-        {% endif %}
-        <p><strong>Open Date:</strong> {{ format_date(selected_case.open_date) }}</p>
-
-        <button class="btn" onclick="location.href='/client/{{ case_client.id }}'" style="margin-top:15px;">
-          View All Cases for {{ case_client.business_name }}
-        </button>
-
-        <p style="margin-top:15px; font-weight:bold;">Select another case for this client:</p>
-        <select onchange="location = '?case_id=' + this.value;" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:14px;">
+        <p style="margin-top:15px; font-weight:bold;">All cases for this client:</p>
+        <select onchange="if(this.value==='viewall') location.href='/client/{{ case_client.id }}'; else location='?case_id='+this.value;" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:14px;">
+          <option value="">— View All Cases —</option>
           {% for c in client_cases %}
             <option value="{{ c.id }}" {% if c.id == selected_case.id %}selected{% endif %}>
-              {{ c.debtor_business_name or c.debtor_first + ' ' + c.debtor_last }} (ID: {{ c.id }})
+              {{ c.debtor_business_name or c.debtor_first + ' ' + c.debtor_last }} – £{{ c.balance|round(2) }} {% if c.status != 'Open' %}({{ c.status }}){% endif %}
             </option>
           {% endfor %}
+          <option value="viewall">→ View All Cases ({{ client_cases|length }})</option>
         </select>
       </div>
       {% endif %}
@@ -243,18 +176,13 @@
                 <td class="note-text">{{ n.note }}</td>
                 <td>{{ n.username }}</td>
                 <td class="note-actions">
+                  <button class="btn-small" onclick="editNote({{ n.id }}, '{{ n.type }}', '{{ n.note|e('js') }}')">Edit</button>
                   <button class="btn-small delete" onclick="deleteNote({{ n.id }})">Del</button>
                 </td>
               </tr>
               {% endfor %}
             </tbody>
           </table>
-          <div class="pagination">
-            {% if page > 1 %}
-              <a href="?case_id={{ selected_case.id }}&page={{ page - 1 }}">« Previous</a>
-            {% endif %}
-            <a href="?case_id={{ selected_case.id }}&page={{ page + 1 }}">Next »</a>
-          </div>
           {% else %}
           <p style="text-align:center; color:#777; margin:20px 0;">No notes yet</p>
           {% endif %}
@@ -281,8 +209,8 @@
               <option>Interest</option>
             </select>
             <input type="number" name="amount" step="0.01" placeholder="Amount" required>
-            <input type="date" name="transaction_date" value="{{ today_str }}" required>
-            <input name="note" placeholder="Note (optional)">
+            <input type="date" name="transaction_date" value="{{ today_str }}">
+            <input name="note" placeholder="Note">
             <div id="chargeOpts" style="display:none; grid-column:1/-1; gap:10px; margin-top:5px;">
               <label><input type="checkbox" name="recoverable"> Recoverable</label>
               <label><input type="checkbox" name="billable"> Billable</label>
@@ -292,13 +220,9 @@
         </div>
 
         <script>
-          const typeSel = document.getElementById('transType');
-          const chargeOpts = document.getElementById('chargeOpts');
-          function toggleCharge() {
-            chargeOpts.style.display = typeSel.value === 'Charge' ? 'grid' : 'none';
-          }
-          typeSel.addEventListener('change', toggleCharge);
-          toggleCharge();
+          document.getElementById('transType').addEventListener('change', function(){
+            document.getElementById('chargeOpts').style.display = this.value==='Charge' ? 'grid' : 'none';
+          });
         </script>
 
         <div class="transactions-scroll">
@@ -309,7 +233,7 @@
                 <th class="trans-date">Date</th>
                 <th class="trans-type">Type</th>
                 <th class="trans-amount">Amount</th>
-                <th class="trans-note" style="width:50%;">Note</th>
+                <th class="trans-note">Note</th>
                 <th class="trans-user">User</th>
                 <th class="trans-rb">R</th>
                 <th class="trans-rb">B</th>
@@ -318,7 +242,7 @@
             </thead>
             <tbody>
               {% for t in transactions %}
-              <tr class="{% if t.type == 'Charge' and t.recoverable == 0 %}grey-charge{% endif %}">
+              <tr class="{% if t.type == 'Charge' and not t.recoverable %}grey-charge{% endif %}">
                 <td>{{ format_date(t.transaction_date) }}</td>
                 <td>{{ t.type }}</td>
                 <td>£{{ t.amount|round(2) }}</td>
@@ -327,18 +251,13 @@
                 <td class="trans-rb">{% if t.recoverable %}✓{% endif %}</td>
                 <td class="trans-rb">{% if t.billable %}✓{% endif %}</td>
                 <td class="trans-actions">
+                  <button class="btn-small" onclick="editTransaction({{ t.id }})">Edit</button>
                   <button class="btn-small delete" onclick="deleteTransaction({{ t.id }})">Del</button>
                 </td>
               </tr>
               {% endfor %}
             </tbody>
           </table>
-          <div class="pagination">
-            {% if page > 1 %}
-              <a href="?case_id={{ selected_case.id }}&page={{ page - 1 }}">« Previous</a>
-            {% endif %}
-            <a href="?case_id={{ selected_case.id }}&page={{ page + 1 }}">Next »</a>
-          </div>
           {% else %}
           <p style="text-align:center; color:#777; margin:20px 0;">No transactions yet</p>
           {% endif %}
@@ -360,46 +279,248 @@
     </div>
   </div>
 
-  <!-- ALL YOUR ORIGINAL MODALS BELOW (100% untouched) -->
-  <!-- clientModal, caseModal, apiModal, noteEditModal, transEditModal – all exactly as you had them -->
+  <!-- ALL ORIGINAL MODALS + NEW CASE EDIT MODAL -->
+  <!-- clientModal -->
+  <div id="clientModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('clientModal')">×</span>
+      <h3>Add Client</h3>
+      <form action="/add_client" method="post">
+        <select name="business_type" required><option>Limited</option><option>Partnership</option><option>Sole Trader</option><option>Individual</option></select>
+        <input name="business_name" placeholder="Business Name" required>
+        <input name="contact_first" placeholder="Contact First">
+        <input name="contact_last" placeholder="Contact Last">
+        <input name="phone" placeholder="Phone">
+        <input name="email" placeholder="Email">
+        <input name="bacs_details" placeholder="BACS Details">
+        <input name="default_interest_rate" type="number" step="0.01" placeholder="Default Rate %" value="0">
+        <button type="submit" class="btn full">Save Client</button>
+      </form>
+    </div>
+  </div>
 
-  <div id="clientModal" class="modal"> ... (your original Add Client modal) </div>
-  <div id="caseModal" class="modal"> ... (your original Add Case modal) </div>
-  <div id="apiModal" class="modal"> ... (your original API modal) </div>
-  <div id="noteEditModal" class="modal"> ... </div>
-  <div id="transEditModal" class="modal"> ... </div>
+  <!-- caseModal -->
+  <div id="caseModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('caseModal')">×</span>
+      <h3>Add Case</h3>
+
+      <div class="client-search-form">
+        <select id="clientSearchField">
+          <option value="client_name">Name</option>
+          <option value="client_code">ID</option>
+        </select>
+        <select id="clientSearchMode">
+          <option value="contains">contains</option>
+          <option value="is">is</option>
+        </select>
+        <input type="text" id="clientSearchInput" placeholder="Search client...">
+        <button class="btn" onclick="searchClients()">Search</button>
+      </div>
+      <div id="clientResults" class="client-results"></div>
+      <div id="selectedClient" style="margin-bottom:10px; font-weight:bold; color:#333;"></div>
+
+      <form action="/add_case" method="post">
+        <input type="hidden" name="client_id" id="selectedClientId" required>
+        <select name="debtor_business_type"><option>Limited</option><option>Partnership</option><option>Sole Trader</option><option>Individual</option></select>
+        <input name="debtor_business_name" placeholder="Debtor Business">
+        <input name="debtor_first" placeholder="Debtor First">
+        <input name="debtor_last" placeholder="Debtor Last">
+        <input name="phone" placeholder="Phone">
+        <input name="email" placeholder="Email">
+        <input name="next_action_date" type="date" placeholder="Next Action Date">
+        <button type="submit" class="btn full">Save Case</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- apiModal -->
+  <div id="apiModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('apiModal')">×</span>
+      <h3>API Keys</h3>
+      <button class="btn" onclick="generateKey()">+ New Key</button>
+      <div id="apiKeys" style="margin-top:15px;"></div>
+    </div>
+  </div>
+
+  <!-- noteEditModal -->
+  <div id="noteEditModal" class="modal">
+    <div class="modal-content" style="width:500px;">
+      <span class="close" onclick="closeModal('noteEditModal')">×</span>
+      <h3>Edit Note</h3>
+      <form id="noteEditForm" action="/edit_note" method="post">
+        <input type="hidden" name="note_id" id="editNoteId">
+        <select name="type" id="editNoteType" required>
+          <option>General</option>
+          <option>Inbound Call</option>
+          <option>Outbound Call</option>
+          <option>Email Sent</option>
+          <option>Email Received</option>
+          <option>Letter Sent</option>
+        </select>
+        <textarea name="note" id="editNoteText" placeholder="Enter note..." required style="height:80px;"></textarea>
+        <button type="submit" class="btn full">Save</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- transEditModal -->
+  <div id="transEditModal" class="modal">
+    <div class="modal-content" style="width:550px;">
+      <span class="close" onclick="closeModal('transEditModal')">×</span>
+      <h3>Edit Transaction</h3>
+      <form id="transEditForm" action="/edit_transaction" method="post">
+        <input type="hidden" name="trans_id" id="editTransId">
+        <input type="number" name="amount" id="editTransAmount" step="0.01" placeholder="Amount" required>
+        <input name="note" id="editTransNote" placeholder="Note (optional)">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+          <label><input type="checkbox" name="recoverable" id="editTransRecoverable"> Recoverable</label>
+          <label><input type="checkbox" name="billable" id="editTransBillable"> Billable</label>
+        </div>
+        <button type="submit" class="btn full">Save</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- NEW: caseEditModal -->
+  <div id="caseEditModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('caseEditModal')">×</span>
+      <h3>Edit Case Details</h3>
+      <form action="/update_case_status" method="post">
+        <input type="hidden" name="case_id" value="{{ selected_case.id }}">
+        <p><strong>Status</strong></p>
+        <select name="status" style="width:100%; padding:8px;">
+          <option value="Open" {% if selected_case.status == 'Open' %}selected{% endif %}>Open</option>
+          <option value="LBA Sent" {% if selected_case.status == 'LBA Sent' %}selected{% endif %}>LBA Sent</option>
+          <option value="Judgment" {% if selected_case.status == 'Judgment' %}selected{% endif %}>Judgment</option>
+          <option value="Closed" {% if selected_case.status == 'Closed' %}selected{% endif %}>Closed</option>
+        </select>
+        <p style="margin-top:10px;"><strong>Sub-status</strong></p>
+        <input name="substatus" value="{{ selected_case.substatus or '' }}" style="width:100%; padding:8px;">
+        <p style="margin-top:10px;"><strong>Next Action Date</strong></p>
+        <input type="date" name="next_action_date" value="{{ selected_case.next_action_date }}" style="width:100%; padding:8px;">
+        <button type="submit" class="btn full" style="margin-top:15px;">Save Changes</button>
+      </form>
+    </div>
+  </div>
 
   <script>
-    // YOUR ORIGINAL JS + FIXED doSearch()
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+    window.onclick = e => { if(e.target.classList.contains('modal')) e.target.classList.remove('active'); }
+
     function doSearch() {
       const q = document.getElementById('searchInput').value.trim();
-      if (!q) { document.getElementById('searchResults').innerHTML = ''; return; }
-
+      if (!q) return;
       fetch(`/search?q=${encodeURIComponent(q)}`)
         .then(r => r.json())
         .then(results => {
           let html = '<table><tr><th>Client</th><th>Debtor</th><th>Postcode</th><th>Email</th><th>Phone</th></tr>';
-          if (results.length === 0) {
-            html += '<tr><td colspan="5" class="no-results">No cases found</td></tr>';
-          } else {
-            results.forEach(r => {
-              html += `<tr class="result-row" onclick="location='?case_id=${r.case_id}'">
-                <td><a href="/client/${r.client_id}">${r.client_name}</a> (${r.client_id})</td>
-                <td>${r.debtor_name}</td>
-                <td>${r.postcode || ''}</td>
-                <td>${r.email || ''}</td>
-                <td>${r.phone || ''}</td>
-              </tr>`;
-            });
-          }
+          if (results.length === 0) html += '<tr><td colspan="5" class="no-results">No cases found</td></tr>';
+          else results.forEach(r => {
+            html += `<tr class="result-row" onclick="location='?case_id=${r.case_id}'">
+              <td><a href="/client/${r.client_id}">${r.client_name}</a> (${r.client_id})</td>
+              <td>${r.debtor_name}</td>
+              <td>${r.postcode||''}</td>
+              <td>${r.email||''}</td>
+              <td>${r.phone||''}</td>
+            </tr>`;
+          });
           html += '</table>';
           document.getElementById('searchResults').innerHTML = html;
         });
     }
 
-    // ALL YOUR OTHER ORIGINAL JS FUNCTIONS (openModal, closeModal, deleteNote, etc.) remain exactly as you wrote them
-    // ... (keep everything you already have below this point)
+    function searchClients() {
+      const q = document.getElementById('clientSearchInput').value.trim();
+      if (!q) return;
+      fetch(`/client_search?q=${encodeURIComponent(q)}`)
+        .then(r => r.json())
+        .then(results => {
+          let html = '';
+          results.forEach(r => {
+            html += `<div class="client-result" onclick="selectClient(${r.id}, '${r.name.replace(/'/g, "\\'")}')">[${r.id}] ${r.name}</div>`;
+          });
+          if (!html) html = '<div class="client-result">No clients found</div>';
+          document.getElementById('clientResults').innerHTML = html;
+        });
+    }
 
+    function selectClient(id, name) {
+      document.getElementById('selectedClientId').value = id;
+      document.getElementById('selectedClient').innerHTML = `<strong>Selected: [${id}] ${name}</strong>`;
+      document.getElementById('clientResults').innerHTML = '';
+      document.getElementById('clientSearchInput').value = '';
+    }
+
+    function generateKey() {
+      fetch('/api/generate_key', {method: 'POST', body: JSON.stringify({}), headers:{'Content-Type':'application/json'}})
+        .then(r => r.json())
+        .then(data => {
+          alert('API Key: ' + data.key + '\nSave it now — you won’t see it again!');
+          loadApiKeys();
+        });
+    }
+
+    function loadApiKeys() {
+      fetch('/api/keys')
+        .then(r => r.json())
+        .then(keys => {
+          let html = '<table style="width:100%; margin-top:10px;"><tr><th>Name</th><th>Actions</th></tr>';
+          keys.forEach(k => {
+            html += `<tr><td>${k.name}</td><td><button class="btn" onclick="revokeKey(${k.id})">Revoke</button></td></tr>`;
+          });
+          html += '</table>';
+          document.getElementById('apiKeys').innerHTML = html;
+        });
+    }
+
+    function revokeKey(id) {
+      if (confirm("Revoke this key?")) {
+        fetch(`/api/revoke_key/${id}`, {method: 'POST'})
+          .then(() => loadApiKeys());
+      }
+    }
+
+    function editNote(id, type, note) {
+      document.getElementById('editNoteId').value = id;
+      document.getElementById('editNoteType').value = type;
+      document.getElementById('editNoteText').value = note;
+      openModal('noteEditModal');
+    }
+
+    function deleteNote(id) {
+      if (confirm("Delete this note?")) {
+        fetch(`/delete_note/${id}`, {method: 'POST'})
+          .then(() => location.reload());
+      }
+    }
+
+    function editTransaction(id) {
+      fetch(`/get_transaction/${id}`)
+        .then(r => r.json())
+        .then(t => {
+          document.getElementById('editTransId').value = t.id;
+          document.getElementById('editTransAmount').value = t.amount;
+          document.getElementById('editTransNote').value = t.note || '';
+          document.getElementById('editTransRecoverable').checked = t.recoverable;
+          document.getElementById('editTransBillable').checked = t.billable;
+          openModal('transEditModal');
+        });
+    }
+
+    function deleteTransaction(id) {
+      if (confirm("Delete this transaction?")) {
+        fetch(`/delete_transaction/${id}`, {method: 'POST'})
+          .then(() => location.reload());
+      }
+    }
+
+    document.getElementById('apiModal').addEventListener('transitionend', function() {
+      if (this.classList.contains('active')) loadApiKeys();
+    });
   </script>
 </body>
 </html>
