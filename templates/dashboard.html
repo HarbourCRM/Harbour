@@ -144,79 +144,64 @@
   <div class="container">
     <div class="left">
 
-<!-- CLIENT / DEBTOR INFO – CLEAN 2×2 GRID (SPACE-SAVING MASTERPIECE) -->
-      {% if selected_case and case_client %}
-      <div class="info-box" style="display:grid; grid-template-columns:1fr 1fr; gap:18px; font-size:14px; line-height:1.4;">
-        
-        <!-- TOP LEFT: DEBTOR INFO -->
-        <div>
-          <div style="font-weight:bold; margin-bottom:4px; color:#222;">Debtor</div>
-          <div style="font-size:15px; font-weight:600;">
-            {{ selected_case.debtor_business_name or selected_case.debtor_first + ' ' + selected_case.debtor_last }}
-          </div>
-          <div style="color:#666; font-size:0.9em; margin:2px 0;">Case ID: {{ selected_case.id }}</div>
-          Type: {{ selected_case.debtor_business_type or '—' }}<br>
-          Contact: {{ selected_case.debtor_first }} {{ selected_case.debtor_last }} |
-          <a href="tel:{{ selected_case.phone }}">{{ selected_case.phone }}</a> |
-          <a href="mailto:{{ selected_case.email }}">{{ selected_case.email }}</a>
-        </div>
-
-        <!-- TOP RIGHT: CLIENT INFO -->
-        <div style="text-align:right;">
-          <div style="font-weight:bold; margin-bottom:4px; color:#222;">Client</div>
-          <div style="font-size:15px; font-weight:600;">{{ case_client.business_name }}</div>
-          <div style="color:#666; font-size:0.9em; margin:2px 0;">ID: {{ case_client.id }}</div>
-          Contact: {{ case_client.contact_first }} {{ case_client.contact_last }} |
-          <a href="tel:{{ case_client.phone }}">{{ case_client.phone }}</a> |
-          <a href="mailto:{{ case_client.email }}">{{ case_client.email }}</a><br>
-          BACS: {{ case_client.bacs_details or '—' }}
-        </div>
-
-        <!-- BOTTOM LEFT: CURRENT CASE STATUS + EDIT BUTTON -->
-        <div style="border-top:1px solid #ddd; padding-top:12px;">
-          <table style="width:100%; margin-bottom:10px;">
-            <tr>
-              <td style="width:130px; color:#555; font-weight:bold; padding:3px 0;">Status</td>
-              <td style="color:#e74c3c; font-weight:bold;">{{ selected_case.status or '—' }}</td>
-            </tr>
-            <tr>
-              <td style="color:#555; font-weight:bold; padding:3px 0;">Sub-status</td>
-              <td>{{ selected_case.substatus or '—' }}</td>
-            </tr>
-            <tr>
-              <td style="color:#555; font-weight:bold; padding:3px 0;">Next Action</td>
-              <td>
-                {% if selected_case.next_action_date %}
-                  <span style="color:#27ae60; font-weight:bold;">{{ selected_case.next_action_date }}</span>
-                {% else %}—
-                {% endif %}
-              </td>
-            </tr>
-          </table>
-          <button class="btn" onclick="openModal('caseEditModal')" style="padding:7px 14px; font-size:13px;">
-            Edit Case Details
-          </button>
-        </div>
-
-        <!-- BOTTOM RIGHT: OTHER CASES SWITCHER -->
-        <div style="border-top:1px solid #ddd; padding-top:12px;">
-          <strong>All cases for this client ({{ client_cases|length }})</strong>
-          <select onchange="if(this.value==='viewall') location.href='/client/{{ case_client.id }}'; else location='?case_id='+this.value;"
-                  style="width:100%; padding:7px; margin-top:6px; font-size:13px; border:1px solid #ccc; border-radius:4px;">
-            <option value="">— Switch Case —</option>
-            {% for c in client_cases %}
-              {% set bal = c.balance|default(0)|float %}
-              <option value="{{ c.id }}" {% if c.id == selected_case.id %}selected{% endif %}>
-                {{ c.debtor_business_name or c.debtor_first + " " + c.debtor_last }} – £{{ "%.2f"|format(bal) }}
-                {% if c.status != 'Open' %} ({{ c.status }}){% endif %}
-              </option>
-            {% endfor %}
-            <option value="viewall">→ View All Cases</option>
-          </select>
-        </div>
-
-      </div>
-      {% endif %}
+1:       <!-- CLIENT / DEBTOR INFO – 2×2 GRID WITH LEFT-ALIGNED CLIENT + FAINT GRID LINES -->
+2:       {% if selected_case and case_client %}
+3:       <div class="info-box" style="display:grid; grid-template-columns:1fr 1fr; gap:18px; font-size:14px; line-height:1.45; border:1px solid #e0e0e0; border-radius:8px; overflow:hidden;">
+4:         
+5:         <!-- TOP LEFT: DEBTOR -->
+6:         <div style="padding:16px; background:#f9fbff; border-right:1px solid #eaeaea; border-bottom:1px solid #eaeaea;">
+7:           <div style="font-weight:bold; margin-bottom:4px; color:#222;">Debtor</div>
+8:           <div style="font-size:15px; font-weight:600; margin-bottom:2px;">
+9:             {{ selected_case.debtor_business_name or selected_case.debtor_first + ' ' + selected_case.debtor_last }}
+10:          </div>
+11:          <div style="color:#666; font-size:0.9em; margin-bottom:6px;">Case ID: {{ selected_case.id }}</div>
+12:          Type: {{ selected_case.debtor_business_type or '—' }}<br>
+13:          Contact: {{ selected_case.debtor_first }} {{ selected_case.debtor_last }} |
+14:          <a href="tel:{{ selected_case.phone }}">{{ selected_case.phone }}</a> |
+15:          <a href="mailto:{{ selected_case.email }}">{{ selected_case.email }}</a>
+16:        </div>
+17:
+18:        <!-- TOP RIGHT: CLIENT (now left-aligned) -->
+19:        <div style="padding:16px; background:#f9fbff; border-bottom:1px solid #eaeaea;">
+20:          <div style="font-weight:bold; margin-bottom:4px; color:#222;">Client</div>
+21:          <div style="font-size:15px; font-weight:600; margin-bottom:2px;">{{ case_client.business_name }}</div>
+22:          <div style="color:#666; font-size:0.9em; margin-bottom:6px;">ID: {{ case_client.id }}</div>
+23:          Contact: {{ case_client.contact_first }} {{ case_client.contact_last }} |
+24:          <a href="tel:{{ case_client.phone }}">{{ case_client.phone }}</a> |
+25:          <a href="mailto:{{ case_client.email }}">{{ case_client.email }}</a><br>
+26:          BACS: {{ case_client.bacs_details or '—' }}
+27:        </div>
+28:
+29:        <!-- BOTTOM LEFT: STATUS + EDIT -->
+30:        <div style="padding:16px; background:#ffffff; border-right:1px solid #eaeaea;">
+31:          <table style="width:100%; margin-bottom:12px;">
+32:            <tr><td style="width:130px; color:#555; font-weight:bold; padding:3px 0;">Status</td><td style="color:#e74c3c; font-weight:bold;">{{ selected_case.status or '—' }}</td></tr>
+33:            <tr><td style="color:#555; font-weight:bold; padding:3px 0;">Sub-status</td><td>{{ selected_case.substatus or '—' }}</td></tr>
+34:            <tr><td style="color:#555; font-weight:bold; padding:3px 0;">Next Action</td>
+35:                <td>{% if selected_case.next_action_date %}<span style="color:#27ae60; font-weight:bold;">{{ selected_case.next_action_date }}</span>{% else %}—{% endif %}</td></tr>
+36:          </table>
+37:          <button class="btn" onclick="openModal('caseEditModal')" style="padding:7px 14px; font-size:13px;">Edit Case Details</button>
+38:        </div>
+39:
+40:        <!-- BOTTOM RIGHT: OTHER CASES -->
+41:        <div style="padding:16px; background:#ffffff;">
+42:          <strong>All cases for this client ({{ client_cases|length }})</strong>
+43:          <select onchange="if(this.value==='viewall') location.href='/client/{{ case_client.id }}'; else location='?case_id='+this.value;"
+44:                  style="width:100%; padding:7px; margin-top:6px; font-size:13px; border:1px solid #ccc; border-radius:4px;">
+45:            <option value="">— Switch Case —</option>
+46:            {% for c in client_cases %}
+47:              {% set bal = c.balance|default(0)|float %}
+48:              <option value="{{ c.id }}" {% if c.id == selected_case.id %}selected{% endif %}>
+49:                {{ c.debtor_business_name or c.debtor_first + " " + c.debtor_last }} – £{{ "%.2f"|format(bal) }}
+50:                {% if c.status != 'Open' %} ({{ c.status }}){% endif %}
+51:              </option>
+52:            {% endfor %}
+53:            <option value="viewall">View All Cases</option>
+54:          </select>
+55:        </div>
+56:
+57:      </div>
+58:      {% endif %}
 
       
       <!-- SEARCH BAR -->
@@ -678,6 +663,7 @@ window.addEventListener('error', function(e) {
   
 </body>
 </html>
+
 
 
 
