@@ -113,15 +113,15 @@
         <button class="btn" onclick="openModal('caseEditModal')" style="margin-top:15px;">Edit Case Details</button>
 
         <p style="margin-top:15px; font-weight:bold;">All cases for this client:</p>
-        <select onchange="if(this.value==='viewall') location.href='/client/{{ case_client.id }}'; else location='?case_id='+this.value;" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:14px;">
-          <option value="">— View All Cases —</option>
-          {% for c in client_cases %}
-            <option value="{{ c.id }}" {% if c.id == selected_case.id %}selected{% endif %}>
-              {{ c.debtor_business_name or c.debtor_first + ' ' + c.debtor_last }} – £{{ c.balance|round(2) }} {% if c.status != 'Open' %}({{ c.status }}){% endif %}
-            </option>
-          {% endfor %}
-          <option value="viewall">→ View All Cases ({{ client_cases|length }})</option>
-        </select>
+<select onchange="if(this.value==='viewall') location.href='/client/{{ case_client.id }}'; else location='?case_id='+this.value;" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:14px;">
+  <option value="">— View All Cases —</option>
+  {% for c in client_cases %}
+    <option value="{{ c.id }}" {% if c.id == selected_case.id %}selected{% endif %}>
+      {{ c.debtor_business_name or c.debtor_first + ' ' + c.debtor_last }} – £{{ (c.balance|default(0))|round(2) }} {% if c.status and c.status != 'Open' %}({{ c.status }}){% endif %}
+    </option>
+  {% endfor %}
+  <option value="viewall">→ View All Cases ({{ client_cases|length }})</option>
+</select>
       </div>
       {% endif %}
 
@@ -524,3 +524,4 @@
   </script>
 </body>
 </html>
+
