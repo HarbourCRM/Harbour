@@ -52,151 +52,521 @@
       text-decoration: underline;
     }
 
-    /* Horizontal orange edit/delete buttons */
-    .action-buttons {
-      display: flex;
-      gap: 8px;
+    /* PINNED ADD BARS */
+    .add-bar-container {
+      position: sticky;
+      bottom: 0;
+      background: #f8f9fa;
+      border-top: 1px solid #ddd;
+      padding: 12px 15px;
     }
-    .btn-edit {
-      background: orange;
-      color: white;
-      border: none;
-      padding: 4px 8px;
+    .add-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 2fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+    .add-bar select, .add-bar input, .add-bar textarea, .add-bar button {
+      height: 40px;
+      padding: 0 10px;
+      border: 1px solid #ccc;
       border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
+      font-size: 14px;
     }
-    .btn-delete {
-      background: #d32f2f;
-      color: white;
-      border: none;
-      padding: 4px 8px;
+    .add-bar select { width: 100%; }
+    .add-bar input[type="number"] { width: 100px; }
+    .add-bar textarea { resize: none; height: 40px; display: flex; align-items: center; }
+    .add-bar textarea::placeholder { color: #777; font-size: 14px; line-height: 40px; }
+    .add-bar button { background: rgb(227,82,5); color: white; font-weight: bold; }
+
+    /* NOTES ADD-BAR: WIDE TEXT */
+    .notes-add-bar {
+      grid-template-columns: 7.5rem 1fr 4rem !important;
+    }
+    .notes-add-bar button { width: 4rem !important; }
+
+    /* CLIENT SEARCH IN ADD CASE */
+    .client-search-form { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+    .client-search-form select, .client-search-form input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+    .client-search-form select { width: 130px; }
+    .client-search-form input { flex: 1; }
+    .client-results { max-height: 150px; overflow-y: auto; border: 1px solid #ddd; background: white; margin-bottom: 10px; }
+    .client-result { padding: 8px; cursor: pointer; border-bottom: 1px solid #eee; }
+    .client-result:hover { background: #f0f0f0; }
+    #selectedClient { margin-bottom: 10px; font-weight: bold; color: #333; }
+
+    /* LOCAL SCROLLING */
+    .notes-scroll, .transactions-scroll {
+      flex: 1;
+      overflow-y: auto;
+      border: 1px solid #eee;
       border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
+      padding: 8px;
+      background: #fff;
+      margin-top: 10px;
     }
+
+    /* R/B & ACTIONS */
+    .trans-rb, .note-actions, .trans-actions { width: 30px; text-align: center; font-size: 12px; }
+    .grey-charge { color: #999 !important; }
+    .grey-charge td { color: #999 !important; }
+    .btn-small { font-size: 11px; padding: 2px 6px; margin: 0 2px; }
+    .btn-small.delete { background: #d9534f; }
   </style>
 </head>
 <body>
+
+  <!-- HEADER -->
   <div class="header">
-    <div style="display:flex; align-items:center; gap:20px;">
-      <img src="/static/helm-logo.png" alt="Helm">
-      <img src="/static/redwood-logo.png" alt="Redwood Collections">
-    </div>
+    <img src="/static/helm-logo.png" alt="Helm">
     <div class="btn-group">
-      <button class="btn" onclick="openModal('addClientModal')">+ Client</button>
-      <button class="btn" onclick="openModal('addCaseModal')">+ Case</button>
+      <button class="btn" onclick="location.href='/'">Home</button>
+      <button class="btn" onclick="openModal('clientModal')">+ Add Client</button>
+      <button class="btn" onclick="openModal('caseModal')">+ Add Case</button>
+      <button class="btn" onclick="location.href='/report'">Reports</button>
       <button class="btn" onclick="openModal('apiModal')">API Keys</button>
-      <button class="btn" onclick="location.href='/logout'">Logout ({{ current_user.username }})</button>
+      <button class="btn" onclick="location.href='/logout'">Logout</button>
     </div>
+    <img src="/static/redwood-logo.png" alt="Redwood">
   </div>
 
   <div class="container">
     <div class="left">
-      {% if not selected_case %}
-        <div class="info-box">
-          <h2>10 Most Recent Cases</h2>
-          <table>
-            <tr><th>Client</th><th>Debtor</th><th>Open Date</th><th>Case ID</th></tr>
-            {% for case in recent_cases %}
-            <tr class="result-row" onclick="location.href='?case_id={{ case.case_id }}'">
-              <td>[{{ case.client_id }}] {{ case.business_name }}</td>
-              <td>{{ case.debtor }}</td>
-              <td>{{ format_date(case.open_date) }}</td>
-              <td>{{ case.case_id }}</td>
-            </tr>
-            {% else %}
-            <tr><td colspan="4">No cases yet</td></tr>
-            {% endfor %}
-          </table>
-        </div>
-      {% endif %}
 
-      {% if selected_case %}
-        <div class="info-box">
-          <h2>Case {{ selected_case.id }} — {{ selected_case.debtor_business_name or selected_case.debtor_first ~ ' ' ~ selected_case.debtor_last }}</h2>
-          <p><strong>Client:</strong> [{{ case_client.id }}] {{ case_client.business_name }}</p>
-          <p><strong>Status:</strong> {{ selected_case.status }} {% if selected_case.substatus %}({{ selected_case.substatus }}){% endif %}</p>
+      <!-- CLIENT / DEBTOR INFO -->
+      {% if selected_case and case_client %}
+      <div class="info-box">
+        <h3>Client: {{ case_client.business_name }} (ID: {{ case_client.id }})</h3>
+        <p><strong>Contact:</strong> 
+          {{ case_client.contact_first }} {{ case_client.contact_last }} | 
+          <a href="tel:{{ case_client.phone }}">{{ case_client.phone }}</a> | 
+          <a href="mailto:{{ case_client.email }}">{{ case_client.email }}</a>
+        </p>
+        <p><strong>BACS:</strong> {{ case_client.bacs_details or '—' }}</p>
+        <hr>
+        <h3>Debtor: {{ selected_case.debtor_business_name or selected_case.debtor_first + ' ' + selected_case.debtor_last }} (ID: {{ selected_case.id }})</h3>
+        <p><strong>Type:</strong> {{ selected_case.debtor_business_type }}</p>
+        <p><strong>Contact:</strong> 
+          {{ selected_case.debtor_first }} {{ selected_case.debtor_last }} | 
+          <a href="tel:{{ selected_case.phone }}">{{ selected_case.phone }}</a> | 
+          <a href="mailto:{{ selected_case.email }}">{{ selected_case.email }}</a>
+        </p>
+        <p><strong>Status:</strong> {{ selected_case.status }}</p>
+        {% if selected_case.substatus %}
+          <p><strong>Substatus:</strong> {{ selected_case.substatus }}</p>
+        {% endif %}
+        {% if selected_case.next_action_date %}
           <p><strong>Next Action:</strong> {{ format_date(selected_case.next_action_date) }}</p>
-        </div>
+        {% endif %}
+        <p><strong>Open Date:</strong> {{ format_date(selected_case.open_date) }}</p>
 
-        <div class="section">
-          <h3>Notes <button class="btn" onclick="openModal('addNoteModal')" style="float:right; font-size:12px; padding:4px 8px;">+ Note</button></h3>
-          <table>
-            <tr><th>Date</th><th>Type</th><th>User</th><th>Note</th><th>Actions</th></tr>
-            {% for n in notes %}
-            <tr>
-              <td class="note-date">{{ n.created_at.strftime('%d/%m/%Y %H:%M') if n.created_at else '' }}</td>
-              <td class="note-type">{{ n.type }}</td>
-              <td class="note-user">{{ n.username }}</td>
-              <td class="note-text">{{ n.note }}</td>
-              <td>
-                <div class="action-buttons">
-                  <button class="btn-edit" onclick="editNote({{ n.id }}, '{{ n.type }}', '{{ n.note|e }}')">Edit</button>
-                  <button class="btn-delete" onclick="deleteNote({{ n.id }})">Delete</button>
-                </div>
-              </td>
-            </tr>
-            {% endfor %}
-          </table>
-        </div>
-
-        <div class="section">
-          <h3>Transactions <button class="btn" onclick="openModal('addTransModal')" style="float:right; font-size:12px; padding:4px 8px;">+ Transaction</button></h3>
-          <table>
-            <tr><th>Date</th><th>Type</th><th>Amount</th><th>R</th><th>B</th><th>User</th><th>Note</th><th>Actions</th></tr>
-            {% for t in transactions %}
-            <tr>
-              <td>{{ format_date(t.transaction_date) }}</td>
-              <td>{{ t.type }}</td>
-              <td>£{{ t.amount|floatformat:2 }}</td>
-              <td>{% if t.recoverable %}✓{% else %}—{% endif %}</td>
-              <td>{% if t.billable %}✓{% else %}—{% endif %}</td>
-              <td>{{ t.username }}</td>
-              <td>{{ t.note }}</td>
-              <td>
-                <div class="action-buttons">
-                  <button class="btn-edit" onclick="editTransaction({{ t.id }})">Edit</button>
-                  <button class="btn-delete" onclick="deleteTransaction({{ t.id }})">Delete</button>
-                </div>
-              </td>
-            </tr>
-            {% endfor %}
-          </table>
-
-          <div class="totals">
-            <div class="total-box">Invoice: £{{ "%.2f"|format(totals.Invoice|float) }}</div>
-            <div class="total-box">Payment: £{{ "%.2f"|format(totals.Payment|float) }}</div>
-            <div class="total-box">Charge: £{{ "%.2f"|format(totals.Charge|float) }}</div>
-            <div class="total-box">Interest: £{{ "%.2f"|format(totals.Interest|float) }}</div>
-          </div>
-          <div class="balance">Balance: £{{ "%.2f"|format(balance|float) }}</div>
-        </div>
-      {% endif %}
-    </div>
-
-    <div class="right">
-      <div class="search-form">
-        <input type="text" id="searchInput" placeholder="Search..." onkeyup="doSearch()">
-        <select id="searchField">
-          <option value="debtor_name">Debtor Name</option>
-          <option value="client_name">Client Name</option>
-          <option value="email">Email</option>
-          <option value="phone">Phone</option>
-          <option value="postcode">Postcode</option>
+        <p style="margin-top:15px; font-weight:bold;">Select another case for this client:</p>
+        <select onchange="location = '?case_id=' + this.value;" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:14px;">
+          {% for c in client_cases %}
+            <option value="{{ c.id }}" {% if c.id == selected_case.id %}selected{% endif %}>
+              {{ c.debtor_business_name or c.debtor_first + ' ' + c.debtor_last }} (ID: {{ c.id }})
+            </option>
+          {% endfor %}
         </select>
       </div>
-      <div id="searchResults"></div>
+      {% endif %}
+
+      <!-- SEARCH BAR -->
+      {% if not selected_case %}
+      <div class="section">
+        <div class="search-form">
+          <select id="searchField">
+            <option value="debtor_name">Debtor Name</option>
+            <option value="client_name">Client Name</option>
+            <option value="postcode">Postcode</option>
+            <option value="email">Email</option>
+            <option value="phone">Phone</option>
+          </select>
+          <select id="searchMode">
+            <option value="contains">contains</option>
+            <option value="is">is</option>
+          </select>
+          <input type="text" id="searchInput" placeholder="Search..." onkeypress="if(event.key==='Enter') doSearch()">
+          <button class="btn" onclick="doSearch()">Search</button>
+        </div>
+        <div id="searchResults"></div>
+      </div>
+      {% endif %}
+
+      <!-- NOTES -->
+      {% if selected_case %}
+      <div class="section" style="display:flex; flex-direction:column; height:100%;">
+        <h3>Notes</h3>
+        <div class="add-bar-container">
+          <form class="add-bar notes-add-bar" action="/add_note" method="post">
+            <input type="hidden" name="case_id" value="{{ selected_case.id }}">
+            <select name="type" required>
+              <option>General</option>
+              <option>Inbound Call</option>
+              <option>Outbound Call</option>
+              <option>Email Sent</option>
+              <option>Email Received</option>
+              <option>Letter Sent</option>
+            </select>
+            <textarea name="note" placeholder="Enter note..." required></textarea>
+            <button type="submit">Add</button>
+          </form>
+        </div>
+
+        <div class="notes-scroll">
+          {% if notes %}
+          <table>
+            <thead>
+              <tr>
+                <th class="note-date">Date</th>
+                <th class="note-type">Type</th>
+                <th class="note-text">Note</th>
+                <th class="note-user">User</th>
+                <th class="note-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for n in notes %}
+              <tr>
+              <td>{{ n.created_at.strftime('%d/%m/%Y') if n.created_at else '' }}</td>
+                <td>{{ n.type }}</td>
+                <td class="note-text">{{ n.note }}</td>
+                <td>{{ n.username }}</td>
+                <td class="note-actions">
+                  <button class="btn-small" onclick="editNote({{ n.id }}, '{{ n.type }}', '{{ n.note|escape }}')">Edit</button>
+                  <button class="btn-small delete" onclick="deleteNote({{ n.id }})">Del</button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <p style="text-align:center; color:#777; margin:20px 0;">No notes yet</p>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right">
+
+      <!-- TRANSACTIONS -->
+      {% if selected_case %}
+      <div class="section" style="display:flex; flex-direction:column; height:100%;">
+        <h3>Transactions</h3>
+        <div class="add-bar-container">
+          <form class="add-bar" action="/add_transaction" method="post">
+            <input type="hidden" name="case_id" value="{{ selected_case.id }}">
+            <select name="type" id="transType" required>
+              <option>Invoice</option>
+              <option>Payment</option>
+              <option>Charge</option>
+              <option>Interest</option>
+            </select>
+            <input type="number" name="amount" step="0.01" placeholder="Amount" required>
+            <input type="date" name="transaction_date" value="{{ today_str }}" required>
+            <input name="note" placeholder="Note (optional)">
+            <div id="chargeOpts" style="display:none; grid-column:1/-1; gap:10px; margin-top:5px;">
+              <label><input type="checkbox" name="recoverable"> Recoverable</label>
+              <label><input type="checkbox" name="billable"> Billable</label>
+            </div>
+            <button type="submit">Add</button>
+          </form>
+        </div>
+
+        <script>
+          const typeSel = document.getElementById('transType');
+          const chargeOpts = document.getElementById('chargeOpts');
+          function toggleCharge() {
+            chargeOpts.style.display = typeSel.value === 'Charge' ? 'grid' : 'none';
+          }
+          typeSel.addEventListener('change', toggleCharge);
+          toggleCharge();
+        </script>
+
+        <div class="transactions-scroll">
+          {% if transactions %}
+          <table>
+            <thead>
+              <tr>
+                <th class="trans-date">Date</th>
+                <th class="trans-type">Type</th>
+                <th class="trans-amount">Amount</th>
+                <th class="trans-note" style="width:50%;">Note</th>
+                <th class="trans-user">User</th>
+                <th class="trans-rb">R</th>
+                <th class="trans-rb">B</th>
+                <th class="trans-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for t in transactions %}
+              <tr class="{% if t.type == 'Charge' and t.recoverable == 0 %}grey-charge{% endif %}">
+                <td>{{ format_date(t.transaction_date) }}</td>
+                <td>{{ t.type }}</td>
+                <td>£{{ t.amount|round(2) }}</td>
+                <td class="trans-note">{{ t.note or '' }}</td>
+                <td>{{ t.username }}</td>
+                <td class="trans-rb">{% if t.recoverable %}✓{% endif %}</td>
+                <td class="trans-rb">{% if t.billable %}✓{% endif %}</td>
+                <td class="trans-actions">
+                  <button class="btn-small" onclick="editTransaction({{ t.id }})">Edit</button>
+                  <button class="btn-small delete" onclick="deleteTransaction({{ t.id }})">Del</button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <p style="text-align:center; color:#777; margin:20px 0;">No transactions yet</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- TOTALS -->
+      <div style="padding:15px;">
+        <div class="totals">
+          <div class="total-box">Invoice<br>£{{ totals.Invoice|round(2) }}</div>
+          <div class="total-box">Charge<br>£{{ totals.Charge|round(2) }}</div>
+          <div class="total-box">Interest<br>£{{ totals.Interest|round(2) }}</div>
+          <div class="total-box">Payment<br>£{{ totals.Payment|round(2) }}</div>
+        </div>
+        <p class="balance">Balance: £{{ balance|round(2) }}</p>
+      </div>
+      {% endif %}
+
     </div>
   </div>
 
-  <!-- Your existing modals go here — unchanged -->
-  <!-- Add Client, Add Case, Add Note, Add Transaction, Edit Note, Edit Transaction, API Keys -->
+  <!-- MODALS -->
+  <div id="clientModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('clientModal')">×</span>
+      <h3>Add Client</h3>
+      <form action="/add_client" method="post">
+        <select name="business_type" required><option>Limited</option><option>Partnership</option><option>Sole Trader</option><option>Individual</option></select>
+        <input name="business_name" placeholder="Business Name" required>
+        <input name="contact_first" placeholder="Contact First">
+        <input name="contact_last" placeholder="Contact Last">
+        <input name="phone" placeholder="Phone">
+        <input name="email" placeholder="Email">
+        <input name="bacs_details" placeholder="BACS Details">
+        <input name="default_interest_rate" type="number" step="0.01" placeholder="Default Rate %" value="0">
+        <button type="submit" class="btn full">Save Client</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="caseModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('caseModal')">×</span>
+      <h3>Add Case</h3>
+
+      <div class="client-search-form">
+        <select id="clientSearchField">
+          <option value="client_name">Name</option>
+          <option value="client_code">ID</option>
+        </select>
+        <select id="clientSearchMode">
+          <option value="contains">contains</option>
+          <option value="is">is</option>
+        </select>
+        <input type="text" id="clientSearchInput" placeholder="Search client...">
+        <button class="btn" onclick="searchClients()">Search</button>
+      </div>
+      <div id="clientResults" class="client-results"></div>
+      <div id="selectedClient" style="margin-bottom:10px; font-weight:bold; color:#333;"></div>
+
+      <form action="/add_case" method="post">
+        <input type="hidden" name="client_id" id="selectedClientId" required>
+        <select name="debtor_business_type"><option>Limited</option><option>Partnership</option><option>Sole Trader</option><option>Individual</option></select>
+        <input name="debtor_business_name" placeholder="Debtor Business">
+        <input name="debtor_first" placeholder="Debtor First">
+        <input name="debtor_last" placeholder="Debtor Last">
+        <input name="phone" placeholder="Phone">
+        <input name="email" placeholder="Email">
+        <input name="next_action_date" type="date" placeholder="Next Action Date">
+        <button type="submit" class="btn full">Save Case</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="apiModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('apiModal')">×</span>
+      <h3>API Keys</h3>
+      <button class="btn" onclick="generateKey()">+ New Key</button>
+      <div id="apiKeys" style="margin-top:15px;"></div>
+    </div>
+  </div>
+
+  <!-- NOTE EDIT MODAL -->
+  <div id="noteEditModal" class="modal">
+    <div class="modal-content" style="width:500px;">
+      <span class="close" onclick="closeModal('noteEditModal')">×</span>
+      <h3>Edit Note</h3>
+      <form id="noteEditForm" action="/edit_note" method="post">
+        <input type="hidden" name="note_id" id="editNoteId">
+        <select name="type" id="editNoteType" required>
+          <option>General</option>
+          <option>Inbound Call</option>
+          <option>Outbound Call</option>
+          <option>Email Sent</option>
+          <option>Email Received</option>
+          <option>Letter Sent</option>
+        </select>
+        <textarea name="note" id="editNoteText" placeholder="Enter note..." required style="height:80px;"></textarea>
+        <button type="submit" class="btn full">Save</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- TRANSACTION EDIT MODAL -->
+  <div id="transEditModal" class="modal">
+    <div class="modal-content" style="width:550px;">
+      <span class="close" onclick="closeModal('transEditModal')">×</span>
+      <h3>Edit Transaction</h3>
+      <form id="transEditForm" action="/edit_transaction" method="post">
+        <input type="hidden" name="trans_id" id="editTransId">
+        <input type="number" name="amount" id="editTransAmount" step="0.01" placeholder="Amount" required>
+        <input name="note" id="editTransNote" placeholder="Note (optional)">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+          <label><input type="checkbox" name="recoverable" id="editTransRecoverable"> Recoverable</label>
+          <label><input type="checkbox" name="billable" id="editTransBillable"> Billable</label>
+        </div>
+        <button type="submit" class="btn full">Save</button>
+      </form>
+    </div>
+  </div>
 
   <script>
-    // Your full existing JavaScript goes here — unchanged
-    // doSearch(), openModal(), client search, API keys, edit/delete functions — all stay exactly as you had them
-    // Only change: the date line in notes is now safe
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+    window.onclick = e => { if (e.target.classList.contains('modal')) e.target.classList.remove('active'); }
+
+    function doSearch() {
+      const q = document.getElementById('searchInput').value.trim();
+      const field = document.getElementById('searchField').value;
+      const mode = document.getElementById('searchMode').value;
+      if (!q) { document.getElementById('searchResults').innerHTML = '<p class="no-results">Please enter a search term.</p>'; return; }
+
+      fetch(`/search?q=${encodeURIComponent(q)}&field=${field}&mode=${mode}`)
+        .then(r => r.json())
+        .then(results => {
+          let html = '<table><tr><th>Client Code</th><th>Client</th><th>Debtor</th><th>Postcode</th><th>Email</th><th>Phone</th></tr>';
+          if (results.length === 0) {
+            html += '<tr><td colspan="6" class="no-results">No cases found</td></tr>';
+          } else {
+            results.forEach(r => {
+              html += `<tr class="result-row" onclick="location='?case_id=${r.case_id}'">
+                <td>${r.client_code}</td>
+                <td>${r.client}</td>
+                <td>${r.debtor}</td>
+                <td>${r.postcode}</td>
+                <td>${r.email}</td>
+                <td>${r.phone}</td>
+              </tr>`;
+            });
+          }
+          html += '</table>';
+          document.getElementById('searchResults').innerHTML = html;
+        });
+    }
+
+    function searchClients() {
+      const q = document.getElementById('clientSearchInput').value.trim();
+      const field = document.getElementById('clientSearchField').value;
+      const mode = document.getElementById('clientSearchMode').value;
+      if (!q) { document.getElementById('clientResults').innerHTML = ''; return; }
+
+      fetch(`/client_search?q=${encodeURIComponent(q)}&field=${field}&mode=${mode}`)
+        .then(r => r.json())
+        .then(results => {
+          let html = '';
+          results.forEach(r => {
+            html += `<div class="client-result" onclick="selectClient(${r.id}, '${r.name.replace(/'/g, "\\'")}')">
+              [${r.id}] ${r.name}
+            </div>`;
+          });
+          if (!html) html = '<div class="client-result">No clients found</div>';
+          document.getElementById('clientResults').innerHTML = html;
+        });
+    }
+
+    function selectClient(id, name) {
+      document.getElementById('selectedClientId').value = id;
+      document.getElementById('selectedClient').innerHTML = `<strong>Selected: [${id}] ${name}</strong>`;
+      document.getElementById('clientResults').innerHTML = '';
+      document.getElementById('clientSearchInput').value = '';
+    }
+
+    function generateKey() {
+      fetch('/api/generate_key', {method: 'POST'})
+        .then(r => r.json())
+        .then(data => {
+          alert('API Key: ' + data.key + '\nSave it now — you won’t see it again!');
+          loadApiKeys();
+        });
+    }
+    function loadApiKeys() {
+      fetch('/api/keys')
+        .then(r => r.json())
+        .then(keys => {
+          let html = '<table style="width:100%; margin-top:10px;"><tr><th>Name</th><th>Key</th><th>Actions</th></tr>';
+          keys.forEach(k => {
+            html += `<tr><td>${k.name}</td><td>••••••••</td><td><button class="btn" onclick="revokeKey(${k.id})">Revoke</button></td></tr>`;
+          });
+          html += '</table>';
+          document.getElementById('apiKeys').innerHTML = html;
+        });
+    }
+    function revokeKey(id) {
+      if (confirm("Revoke this key?")) {
+        fetch(`/api/revoke_key/${id}`, {method: 'POST'})
+          .then(() => loadApiKeys());
+      }
+    }
+
+    function editNote(id, type, note) {
+      document.getElementById('editNoteId').value = id;
+      document.getElementById('editNoteType').value = type;
+      document.getElementById('editNoteText').value = note;
+      openModal('noteEditModal');
+    }
+
+    function deleteNote(id) {
+      if (confirm("Delete this note?")) {
+        fetch(`/delete_note/${id}`, {method: 'POST'})
+          .then(() => location.reload());
+      }
+    }
+
+    function editTransaction(id) {
+      fetch(`/get_transaction/${id}`)
+        .then(r => r.json())
+        .then(t => {
+          document.getElementById('editTransId').value = t.id;
+          document.getElementById('editTransAmount').value = t.amount;
+          document.getElementById('editTransNote').value = t.note || '';
+          document.getElementById('editTransRecoverable').checked = t.recoverable;
+          document.getElementById('editTransBillable').checked = t.billable;
+          openModal('transEditModal');
+        });
+    }
+
+    function deleteTransaction(id) {
+      if (confirm("Delete this transaction?")) {
+        fetch(`/delete_transaction/${id}`, {method: 'POST'})
+          .then(() => location.reload());
+      }
+    }
+
+    document.getElementById('apiModal').addEventListener('transitionend', function() {
+      if (this.classList.contains('active')) loadApiKeys();
+    });
   </script>
 </body>
 </html>
+
