@@ -118,15 +118,21 @@ def init_db(DATABASE_URL):
     # --- SAFE MIGRATIONS / RENAME / ADD FIELDS ---
 
     # rename note -> description only if old column exists
-    try:
+    c.execute("""
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'money' AND column_name = 'note'
+    """)
+    if c.fetchone():
         c.execute("ALTER TABLE money RENAME COLUMN note TO description")
-    except:
-        pass
 
+    # new fields (these are safe to repeat because of IF NOT EXISTS)
     c.execute("ALTER TABLE money ADD COLUMN IF NOT EXISTS vat_amount REAL DEFAULT 0.0")
     c.execute("ALTER TABLE money ADD COLUMN IF NOT EXISTS billed INTEGER DEFAULT 0")
     c.execute("ALTER TABLE money ADD COLUMN IF NOT EXISTS billeddate DATE")
     c.execute("ALTER TABLE money ADD COLUMN IF NOT EXISTS charge_id INTEGER REFERENCES charges(id)")
 
+
     conn.commit()
     conn.close()
+
