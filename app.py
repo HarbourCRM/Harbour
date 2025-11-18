@@ -173,7 +173,6 @@ def init_db():
     conn.commit()
     conn.close()
 
-init_db()
 
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
@@ -737,5 +736,6 @@ def db_structure():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
