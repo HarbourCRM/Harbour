@@ -57,6 +57,7 @@ def utility_processor():
     return dict(format_date=format_date, money=money)
 
 app.jinja_env.filters['money'] = money
+app.jinja_env.filters['format_date'] = format_date # <-- THE FIX IS HERE
 
 
 def init_db():
@@ -553,45 +554,12 @@ def revoke_key(key_id):
 @app.route('/edit_note', methods=['POST'])
 @login_required
 def edit_note():
-    """CORRECTED: Fetches case_id from DB before redirecting."""
-    note_id = request.form.get('note_id')
-    new_type = request.form.get('type')
-    new_note_content = request.form.get('note')
-    
-    if not all([note_id, new_type, new_note_content]):
-        flash('Missing required note fields.', 'error')
-        # If possible, try to go back to a case, but default to dashboard
-        return redirect(request.referrer or url_for('dashboard')) 
-        
     db = get_db()
     c = db.cursor()
-    
-    # 1. Fetch the case_id before updating so we know where to redirect
-    # We also check if the note exists for the current user's security/context
-    c.execute("SELECT case_id FROM notes WHERE id = %s", (note_id,))
-    result = c.fetchone()
-    
-    if not result:
-        flash('Note not found.', 'error')
-        return redirect(url_for('dashboard'))
-    
-    case_id = result['case_id']
-    
-    # 2. Update the note details and set the user/timestamp 
-    # (Important: You were not setting created_by or created_at in your original update, 
-    # which means the note creator/time will look wrong after edit. I'm adding created_at update 
-    # to reflect the edit time and updating user_id to current_user.id)
-    c.execute('''
-        UPDATE notes
-        SET type = %s, note = %s, created_at = NOW(), created_by = %s
-        WHERE id = %s
-    ''', (new_type, new_note_content, current_user.id, note_id))
-    
+    c.execute("UPDATE notes SET type = %s, note = %s WHERE id = %s", 
+              (request.form['type'], request.form['note'], request.form['note_id']))
     db.commit()
-    flash('Note successfully updated.', 'success')
-    
-    # 3. Redirect back to the specific case using the fetched ID
-    return redirect(url_for('dashboard', case_id=case_id))
+    return redirect(url_for('dashboard', case_id=request.form.get('case_id') or ''))
 
 @app.route('/delete_note/<int:note_id>', methods=['POST'])
 @login_required
@@ -618,9 +586,6 @@ def edit_transaction():
     c = db.cursor()
     recoverable = 1 if request.form.get('recoverable') else 0
     billable = 1 if request.form.get('billable') else 0
-    # Note: Like the note edit, this relies on a hidden case_id field in the transEditModal 
-    # to redirect correctly. The original HTML form you are using for the transaction edit 
-    # will also need a hidden case_id field if you want it to redirect back to the current case.
     c.execute('''
         UPDATE money SET amount = %s, note = %s, recoverable = %s, billable = %s
         WHERE id = %s
