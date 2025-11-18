@@ -314,14 +314,29 @@ th { background:#f5f5f5; }
 
   <div class="header">
     <img src="/static/helm-logo.png" alt="Helm">
-    <div class="btn-group">
-      <button class="btn" onclick="location.href='/'">Home</button>
-      <button class="btn" onclick="openModal('clientModal')">+ Add Client</button>
-      <button class="btn" onclick="openModal('caseModal')">+ Add Case</button>
-      <button class="btn" onclick="location.href='/report'">Reports</button>
-      <button class="btn" onclick="openModal('apiModal')">API Keys</button>
-      <button class="btn" onclick="location.href='/logout'">Logout</button>
+    
+<div class="btn-group">
+
+  <button class="btn" onclick="location.href='/'">Home</button>
+  <button class="btn" onclick="openModal('clientModal')">+ Add Client</button>
+  <button class="btn" onclick="openModal('caseModal')">+ Add Case</button>
+  <button class="btn" onclick="location.href='/report'">Reports</button>
+
+  <!-- SETUP DROPDOWN -->
+  <div class="dropdown">
+    <button class="btn dropdown-btn">Setup ▼</button>
+    <div class="dropdown-content">
+      <a href="/db_structure">View DB Structure</a>
+      <a href="javascript:void(0)" onclick="openModal('apiModal')">API Keys</a>
     </div>
+  </div>
+
+  <button class="btn" onclick="location.href='/logout'">Logout</button>
+
+</div>
+
+
+    
     <img src="/static/redwood-logo.png" alt="Redwood">
   </div>
 
@@ -763,3 +778,4 @@ th { background:#f5f5f5; }
 
 </body>
 </html>
+
