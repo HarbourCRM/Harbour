@@ -397,7 +397,8 @@ th { background:#f5f5f5; }
       {% for c in client_cases %}
         {% set bal = c.balance|default(0)|float %}
         <option value="{{ c.id }}" {% if c.id == selected_case.id %}selected{% endif %}>
-          {{ c.debtor_business_name or c.debtor_first + " " + c.debtor_last }} – £{{ "%.2f"|format(bal) }}
+{{ c.debtor_business_name or c.debtor_first + " " + c.debtor_last }} – {{ bal|money }}
+
           {% if c.status != 'Open' %} ({{ c.status }}){% endif %}
         </option>
       {% endfor %}
@@ -569,7 +570,8 @@ th { background:#f5f5f5; }
 <div class="total-box">Payment<br>{{ totals.Payment|money }}</div>
 
         </div>
-        <p class="balance">Balance: £{{ balance|round(2) }}</p>
+       <p class="balance">Balance: {{ balance|money }}</p>
+
       </div>
       {% endif %}
 
@@ -873,6 +875,7 @@ window.addEventListener('error', function(e) {
   
 </body>
 </html>
+
 
 
 
