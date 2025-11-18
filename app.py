@@ -701,6 +701,41 @@ def dashboard():
                            today_str=today_str,
                            page=page)
 
+@app.route('/db_structure')
+@login_required
+def db_structure():
+    db = get_db()
+    c = db.cursor()
+
+    # Get list of all user tables
+    c.execute("""
+        SELECT table_name 
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+        ORDER BY table_name
+    """)
+    tables = [row['table_name'] for row in c.fetchall()]
+
+    structure = {}
+
+    for t in tables:
+        c.execute(f"""
+            SELECT 
+                column_name,
+                data_type,
+                is_nullable,
+                column_default
+            FROM information_schema.columns
+            WHERE table_name = %s
+            ORDER BY ordinal_position
+        """, (t,))
+        structure[t] = c.fetchall()
+
+    return render_template('db_structure.html', structure=structure)
+
+
+
 if __name__ == '__main__':
     app.run(debug=True)
+
 
