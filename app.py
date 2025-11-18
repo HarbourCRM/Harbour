@@ -10,6 +10,8 @@ from io import BytesIO
 from weasyprint import HTML
 import uuid
 
+from init_db import init_db
+
 app = Flask(__name__)
 
 app.config['DEBUG'] = True
@@ -20,6 +22,8 @@ app.config['TRAP_HTTP_EXCEPTIONS'] = False
 app.secret_key = 'supersecretkey'  # You said security later
 
 DATABASE_URL = os.environ['DATABASE_URL']
+init_db(DATABASE_URL)
+
 
 def get_db():
     if 'db' not in g:
@@ -699,3 +703,4 @@ def dashboard():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
