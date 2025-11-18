@@ -476,16 +476,20 @@ th { background:#f5f5f5; }
 
                 
 <td class="note-actions" style="text-align:center; white-space:nowrap;">
-<a 
-  href="javascript:void(0)" 
-  class="flat-action"
-  onclick="editNote({{ n.id }}, '{{ n.type|escapejs }}', {{ n.note|tojson|safe }})"
->edit</a>
+  <a 
+    href="javascript:void(0)" 
+    class="flat-action"
+    onclick="editNote({{ n.id }}, {{ n.type|tojson }}, {{ n.note|tojson }})"
+  >edit</a>
 
   <span style="color:#ccc;">|</span>
-  <a href="javascript:deleteNote({{ n.id }})" 
-     class="flat-action flat-del">del</a>
+
+  <a 
+    href="javascript:deleteNote({{ n.id }})" 
+    class="flat-action flat-del"
+  >del</a>
 </td>
+
 
                 
               </tr>
@@ -891,6 +895,7 @@ window.addEventListener('error', function(e) {
   
 </body>
 </html>
+
 
 
 
