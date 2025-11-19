@@ -5,7 +5,7 @@
 #  These are the "Report" button features
 # =============================================================================
 
-from flask import Blueprint, request, send_file, make_response, jsonify
+from flask import Blueprint, request, send_file, make_response
 from flask_login import login_required
 from extensions import get_db
 import pandas as pd
@@ -87,11 +87,21 @@ def export_pdf():
     html += "<table border='1' style='width:100%; border-collapse:collapse; font-family:Arial; font-size:12px;'><tr style='background:#ddd;'><th>Case ID</th><th>Debtor</th><th>Invoice</th><th>Payment</th><th>Charge</th><th>Interest</th><th>Balance</th></tr>"
     for case_id, d in cases.items():
         balance = d['Invoice'] + d['Charge'] + d['Interest'] - d['Payment']
-        html += "<tr><td>" + str(case_id) + "</td><td>" + str(d['debtor']) + "</td><td>&pound;" + "{:.2f}".format(d['Invoice']) + "</td><td>&pound;" + "{:.2f}".format(d['Payment']) + "</td><td>&pound;" + "{:.2f}".format(d['Charge']) + "</td><td>&pound;" + "{:.2f}".format(d['Interest']) + "</td><td>&pound;" + "{:.2f}".format(balance) + "</td></tr>"
-£{d['Interest']:.2f}</td><td>£{balance:.2f}</td></tr>"
+        html += "<tr><td>" + str(case_id) + "</td><td>" + str(d['debtor']) + "</td>"
+        html += "<td>" + format(d['Invoice'], ".2f") + "</td>"
+        html += "<td>" + format(d['Payment'], ".2f") + "</td>"
+        html += "<td>" + format(d['Charge'], ".2f") + "</td>"
+        html += "<td>" + format(d['Interest'], ".2f") + "</td>"
+        html += "<td>" + format(balance, ".2f") + "</td></tr>"
+
     grand = {t: sum(c[t] for c in cases.values()) for t in ['Invoice','Payment','Charge','Interest']}
     grand_balance = grand['Invoice'] + grand['Charge'] + grand['Interest'] - grand['Payment']
-    html += f"<tr style='font-weight:bold; background:#eee;'><td colspan='2'>TOTALS</td><td>£{grand['Invoice']:.2f}</td><td>£{grand['Payment']:.2f}</td><td>£{grand['Charge']:.2f}</td><td>£{grand['Interest']:.2f}</td><td>£{grand_balance:.2f}</td></tr></table>"
+    html += "<tr style='font-weight:bold; background:#eee;'><td colspan='2'>TOTALS</td>"
+    html += "<td>" + format(grand['Invoice'], ".2f") + "</td>"
+    html += "<td>" + format(grand['Payment'], ".2f") + "</td>"
+    html += "<td>" + format(grand['Charge'], ".2f") + "</td>"
+    html += "<td>" + format(grand['Interest'], ".2f") + "</td>"
+    html += "<td>" + format(grand_balance, ".2f") + "</td></tr></table>"
 
     pdf = HTML(string=html).write_pdf()
     response = make_response(pdf)
