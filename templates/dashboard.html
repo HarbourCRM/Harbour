@@ -701,10 +701,17 @@ th { background:#f5f5f5; }
         <label for="editTransNote" style="display:block; margin-top:10px; font-weight:bold;">Note:</label>
         <textarea name="note" id="editTransNote" style="width:100%; height:70px; padding:8px; box-sizing:border-box; font-size:12px;"></textarea>
         
-        <div style="margin-top:10px; display:flex; gap:15px;">
-            <label><input type="checkbox" name="recoverable" value="1" id="editTransRecoverable" style="width:auto; height:10px;"> Recoverable</label>
-            <label><input type="checkbox" name="billable" value="1" id="editTransBillable" style="width:auto; height:10px;"> Billable</label>
-        </div>
+{# ---- NEW: Only visible when editing a Charge ---- #}
+<div id="chargeOptions" style="margin-top:10px; display:flex; gap:15px; display:none;">
+    <label>
+        <input type="checkbox" name="recoverable" value="1" id="editTransRecoverable" style="width:auto; height:10px;">
+        Recoverable
+    </label>
+    <label>
+        <input type="checkbox" name="billable" value="1" id="editTransBillable" style="width:auto; height:10px;">
+        Billable
+    </label>
+</div>
 
         <button type="submit" class="btn" style="width:100%; margin-top:15px; height:32px;">Save Changes</button>
       </form>
@@ -828,6 +835,7 @@ th { background:#f5f5f5; }
 
 </body>
 </html>
+
 
 
 
