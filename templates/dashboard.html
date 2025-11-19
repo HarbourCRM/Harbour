@@ -575,7 +575,7 @@ th { background:#f5f5f5; }
                 <th style="width:10%; text-align:right;">Amount</th>
                 <th class="trans-rb">R</th>
                 <th class="trans-rb">B</th>
-                <th style="width:50%;">Note</th>
+                <th style="width:50%;">Description</th>
                 <th style="width:10%;">User</th>
                 <th class="trans-actions">Actions</th>
               </tr>
@@ -588,7 +588,7 @@ th { background:#f5f5f5; }
                 <td style="text-align:right;">{{ t.amount|money }}</td>
                 <td class="trans-rb">{% if t.recoverable %}Y{% endif %}</td>
                 <td class="trans-rb">{% if t.billable %}Y{% endif %}</td>
-                <td class="trans-note">{{ t.note }}</td>
+                <td class="trans-note">{{ t.description }}</td>
                 <td>{{ t.username }}</td>
                 <td class="trans-actions" style="text-align:center; white-space:nowrap;">
                   <a href="javascript:void(0)" class="flat-action" onclick="openEditTransactionModal({{ t.id }})">edit</a>
@@ -740,7 +740,7 @@ th { background:#f5f5f5; }
         .then(data => {
           document.getElementById('editTransId').value = data.id;
           document.getElementById('editTransAmount').value = data.amount;
-          document.getElementById('editTransNote').value = data.note || '';
+          document.getElementById('editTransNote').value = data.description || '';
           document.getElementById('editTransRecoverable').checked = data.recoverable == 1;
           document.getElementById('editTransBillable').checked = data.billable == 1;
           openModal('transEditModal');
@@ -828,6 +828,7 @@ th { background:#f5f5f5; }
 
 </body>
 </html>
+
 
 
 
