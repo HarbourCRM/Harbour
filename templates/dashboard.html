@@ -643,14 +643,23 @@ th { background:#f5f5f5; }
     </div>
   </div>
 
-  <div id="clientModal" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="closeModal('clientModal')">&times;</span>
-      <h3>Add New Client</h3>
-      <form action="/add_client" method="post">
-        </form>
-    </div>
+<div id="clientModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal('clientModal')">&times;</span>
+    <h3>Add New Client</h3>
+    <form action="{{ url_for('client.add_client') }}" method="post">
+      <input type="text" name="business_type" placeholder="Business Type" required style="width:100%; margin-bottom:10px; height:32px;">
+      <input type="text" name="business_name" placeholder="Business Name" required style="width:100%; margin-bottom:10px; height:32px;">
+      <input type="text" name="contact_first" placeholder="Contact First Name" required style="width:100%; margin-bottom:10px; height:32px;">
+      <input type="text" name="contact_last" placeholder="Contact Last Name" required style="width:100%; margin-bottom:10px; height:32px;">
+      <input type="tel" name="phone" placeholder="Phone" style="width:100%; margin-bottom:10px; height:32px;">
+      <input type="email" name="email" placeholder="Email" style="width:100%; margin-bottom:10px; height:32px;">
+      <input type="text" name="bacs_details" placeholder="BACS Details" style="width:100%; margin-bottom:10px; height:32px;">
+      <input type="number" name="default_interest_rate" placeholder="Default Interest Rate %" step="0.01" value="8" style="width:100%; margin-bottom:10px; height:32px;">
+      <button type="submit" class="btn" style="width:100%;">Add Client</button>
+    </form>
   </div>
+</div>
 
   <div id="caseModal" class="modal">
     <div class="modal-content">
@@ -843,6 +852,7 @@ function openEditTransactionModal(id) {
 
 </body>
 </html>
+
 
 
 
