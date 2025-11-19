@@ -370,7 +370,7 @@ th { background:#f5f5f5; }
  <button class="btn" onclick="location.href='{{ url_for('case.dashboard') }}'">Home</button>
   <button class="btn" onclick="openModal('clientModal')">+ Add Client</button>
   <button class="btn" onclick="openModal('caseModal')">+ Add Case</button>
-  <button class="btn" onclick="location.href='/report'">Reports</button>
+  <button class="btn" onclick="location.href='{{ url_for('reports.report_page') }}'">Reports</button>
 
   <!-- SETUP DROPDOWN -->
   <div class="dropdown">
@@ -843,6 +843,7 @@ function openEditTransactionModal(id) {
 
 </body>
 </html>
+
 
 
 
