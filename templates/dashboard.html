@@ -440,6 +440,7 @@ th { background:#f5f5f5; }
 
   
 <div style="padding:10px; background:#ffffff; border-right:1px solid #eaeaea;">
+  <strong style="font-size:12px; display:block; margin-bottom:6px;">Change Status</strong>
   <form action="{{ url_for('case.update_case_status') }}" method="post" style="display:grid; grid-template-columns:1fr 1fr 1fr auto auto; gap:6px; align-items:center;">
     <input type="hidden" name="case_id" value="{{ selected_case.id }}">
 
@@ -928,6 +929,7 @@ function openEditTransactionModal(id) {
 
 </body>
 </html>
+
 
 
 
