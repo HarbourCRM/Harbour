@@ -498,7 +498,7 @@ def get_transaction(trans_id):
     db = get_db()
     c = db.cursor()
     c.execute("""
-        SELECT id, amount, description, recoverable, billable
+        SELECT id, type, amount, description, recoverable, billable
         FROM money 
         WHERE id = %s
     """, (trans_id,))
@@ -507,7 +507,7 @@ def get_transaction(trans_id):
         return jsonify({}), 404
     
     data = dict(trans)
-    data['note'] = data.get('description') or ''  # keeps the current JS working
+    data['note'] = data.get('description') or ''  # backward compat for JS
     return jsonify(data)
 
 
@@ -654,6 +654,7 @@ def db_structure():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
 
