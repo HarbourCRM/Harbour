@@ -419,7 +419,24 @@ th { background:#f5f5f5; }
     BACS: {{ case_client.bacs_details or '—' }}
   </div>
 
+<!-- All cases dropdown – restored and fixed -->
+  <div style="padding:10px; background:#ffffff;">
+    <strong style="font-size:12px;">All cases for this client ({{ client_cases|length }})</strong>
+    <select onchange="if(this.value==='viewall') location.href='{{ url_for('client.client_cases', client_id=case_client.id) }}'; else if(this.value) location='?case_id='+this.value;" 
+            style="width:100%; padding:5px; margin-top:4px; font-size:12px; border:1px solid #ccc; border-radius:4px; height:32px;">
+      <option value="">— Switch Case —</option>
+      {% for c in client_cases %}
+        {% set bal = c.balance|default(0)|float %}
+        <option value="{{ c.id }}" {% if c.id == selected_case.id %}selected{% endif %}>
+          {{ c.debtor_business_name or c.debtor_first + " " + c.debtor_last }} – {{ bal|money }}
+          {% if c.status != 'Open' %} ({{ c.status }}){% endif %}
+        </option>
+      {% endfor %}
+      <option value="viewall">View All Cases →</option>
+    </select>
+  </div>
 
+  
 
   
 <div style="padding:10px; background:#ffffff; border-right:1px solid #eaeaea;">
@@ -911,6 +928,7 @@ function openEditTransactionModal(id) {
 
 </body>
 </html>
+
 
 
 
