@@ -215,7 +215,7 @@ def delete_note(note_id):
 
 
 # ----------------------------------------------------------------------
-#  CASE STATUS UPDATE
+# CASE STATUS UPDATE – now includes Next Action Date
 # ----------------------------------------------------------------------
 @case_bp.route('/update_case_status', methods=['POST'])
 @login_required
@@ -223,20 +223,34 @@ def update_case_status():
     case_id = request.form['case_id']
     new_status = request.form['status']
     new_substatus = request.form.get('substatus') or None
+    new_next_action_date = request.form.get('next_action_date') or None   # <-- NEW
 
     db = get_db()
     c = db.cursor()
-    c.execute("SELECT status, substatus FROM cases WHERE id = %s", (case_id,))
+
+    # Get current values for history
+    c.execute("SELECT status, substatus, next_action_date FROM cases WHERE id = %s", (case_id,))
     old = c.fetchone()
 
-    c.execute("UPDATE cases SET status = %s, substatus = %s WHERE id = %s",
-              (new_status, new_substatus, case_id))
+    # Update the case (including next_action_date)
+    c.execute("""
+        UPDATE cases 
+        SET status = %s, 
+            substatus = %s, 
+            next_action_date = %s 
+        WHERE id = %s
+    """, (new_status, new_substatus, new_next_action_date, case_id))
 
-    c.execute('''
-        INSERT INTO case_status_history 
-        (case_id, old_status, old_substatus, new_status, new_substatus, changed_by)
-        VALUES (%s, %s, %s, %s, %s, %s)
-    ''', (case_id, old['status'], old['substatus'], new_status, new_substatus, current_user.id))
+    # Record the change in history (only if something actually changed)
+    if (old['status'] != new_status or 
+        old['substatus'] != new_substatus or 
+        old['next_action_date'] != new_next_action_date):
+        
+        c.execute('''
+            INSERT INTO case_status_history 
+            (case_id, old_status, old_substatus, new_status, new_substatus, changed_by)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        ''', (case_id, old['status'], old['substatus'], new_status, new_substatus, current_user.id))
 
     db.commit()
     return redirect(url_for('case.dashboard', case_id=case_id))
