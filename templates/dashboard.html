@@ -545,25 +545,38 @@ th { background:#f5f5f5; }
       {% if selected_case %}
       <div class="section" style="display:flex; flex-direction:column; height:100%;">
         <h3>Transactions</h3>
-        <div class="add-bar-container">
-          <form class="add-bar" action="{{ url_for('case.add_transaction') }}" method="post">
-            <input type="hidden" name="case_id" value="{{ selected_case.id }}">
-            <select name="type" id="transType" required>
-              <option>Invoice</option>
-              <option>Payment</option>
-              <option>Charge</option>
-              <option>Interest</option>
-            </select>
-            <input type="number" name="amount" step="0.01" placeholder="Amount" required>
-            <input type="date" name="transaction_date" value="{{ today_str }}">
-            <input name="note" placeholder="Note">
-            <div id="chargeOpts" style="display:none; grid-column:1/-1; text-align:right; font-size:11px;">
-                <label><input type="checkbox" name="recoverable" value="1" style="width:auto; height:10px;"> Recoverable</label>
-                <label><input type="checkbox" name="billable" value="1" style="width:auto; height:10px;"> Billable</label>
-            </div>
-            <button type="submit" style="grid-column:5;">Add</button>
-          </form>
-        </div>
+
+        
+<div class="add-bar-container">
+  <form class="add-bar" action="{{ url_for('case.add_transaction') }}" method="post">
+    <input type="hidden" name="case_id" value="{{ selected_case.id }}">
+
+    <select name="type" id="transType" required>
+      <option>Invoice</option>
+      <option>Payment</option>
+      <option>Charge</option>
+      <option>Interest</option>
+    </select>
+
+    <input type="number" name="amount" step="0.01" placeholder="Amount" required>
+
+    <input type="date" name="transaction_date" value="{{ today_str }}">
+
+    <input name="note" placeholder="Note">
+
+    <button type="submit">Add</button>
+
+    <!-- Charge options — now a clean second row, left-aligned, no pushing -->
+    <div id="chargeOpts" style="display:none; grid-column:1 / 5; margin-top:6px; padding-left:8px;">
+      <label style="margin-right:25px; font-size:11px;">
+        <input type="checkbox" name="recoverable" value="1"> Recoverable
+      </label>
+      <label style="font-size:11px;">
+        <input type="checkbox" name="billable" value="1"> Billable
+      </label>
+    </div>
+  </form>
+</div>
 
         <div class="transactions-scroll">
           {% if transactions %}
@@ -874,6 +887,7 @@ function openEditTransactionModal(id) {
 
 </body>
 </html>
+
 
 
 
