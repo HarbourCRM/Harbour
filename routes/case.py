@@ -261,8 +261,8 @@ def update_case_status():
 def undo_status(case_id):
     db = get_db()
     c = db.cursor()
-   
-    # Get the last status change
+
+    # Get the most recent status change
     c.execute("""
         SELECT old_status, old_substatus
         FROM case_status_history
@@ -271,34 +271,38 @@ def undo_status(case_id):
         LIMIT 1
     """, (case_id,))
     last = c.fetchone()
-   
-    if last:
-        old_status = last['old_status']
-        old_substatus = last['old_substatus'] or None
 
-        # Revert status and substatus
-        c.execute("""
-            UPDATE cases
-            SET status = %s, substatus = %s
-            WHERE id = %s
-        """, (old_status, old_substatus, case_id))
+    if not last:
+        flash("Nothing to undo", "info")
+        return redirect(url_for('case.dashboard', case_id=case_id))
 
-        # Optional: also clear next_action_date on undo (or leave it — up to you)
-        # Most people prefer to clear it so it's not stuck on an old date
-        c.execute("UPDATE cases SET next_action_date = NULL WHERE id = %s", (case_id,))
+    old_status = last['old_status']
+    old_substatus = last['old_substatus']  # can be NULL
 
-        # Remove the history entry (so you can't undo twice)
-        c.execute("""
-            DELETE FROM case_status_history
+    # 1. Revert the case status
+    c.execute("""
+        UPDATE cases
+        SET status = %s,
+            substatus = %s,
+            next_action_date = NULL   -- clears the date when undoing (most users prefer this)
+        WHERE id = %s
+    """, (old_status, old_substatus, case_id))
+
+    # 2. Delete that exact history row safely (using a subquery because PostgreSQL needs it)
+    c.execute("""
+        DELETE FROM case_status_history
+        WHERE ctid = (
+            SELECT ctid
+            FROM case_status_history
             WHERE case_id = %s
-            AND old_status = %s
-            AND (old_substatus = %s OR (old_substatus IS NULL AND %s IS NULL))
-            ORDER BY changed_at DESC LIMIT 1
-        """, (case_id, old_status, old_substatus, old_substatus))
+            ORDER BY changed_at DESC
+            LIMIT 1
+        )
+    """, (case_id,))
 
-        db.commit()
-        flash("Status undone successfully", "success")
-   
+    db.commit()
+    flash("Status successfully undone", "success")
+
     return redirect(url_for('case.dashboard', case_id=case_id))
 
 
