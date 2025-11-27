@@ -398,7 +398,7 @@ th { background:#f5f5f5; }
 <div class="info-box" style="display:grid; grid-template-columns:1fr 1fr 0.8fr; gap:0px; font-size:13px; line-height:1.35; background: none; border:none; overflow:hidden; padding:0; margin:0 15px;">
 
   <div style="padding:10px; background:#fff; border-right:1px solid #eaeaea;">
-    <div style="font-weight:bold; margin-bottom:2px; color:#E35205; font-size:12px;">Debtor</div>
+    <div style="font-weight:bold; margin-bottom:2px; color:#E35205; font-size:9px;">Debtor</div>
     <div style="font-size:18px; font-weight:600; margin-bottom:2px;">
       {{ selected_case.debtor_business_name or selected_case.debtor_first + ' ' + selected_case.debtor_last }}
     </div>
@@ -410,7 +410,7 @@ th { background:#f5f5f5; }
   </div>
 
   <div style="padding:10px; background:#fff; border-right:1px solid #eaeaea;">
-    <div style="font-weight:bold; margin-bottom:2px; color:#E35205; font-size:12px;">Client</div>
+    <div style="font-weight:bold; margin-bottom:2px; color:#E35205; font-size:9px;">Client</div>
     <div style="font-size:18px; font-weight:600; margin-bottom:2px;">{{ case_client.business_name }}</div>
     <div style="color:#666; font-size:0.9em; margin-bottom:4px;">ID: {{ case_client.id }}</div>
     Contact: {{ case_client.contact_first }} {{ case_client.contact_last }} |
@@ -862,5 +862,6 @@ function openEditTransactionModal(id) {
 
 </body>
 </html>
+
 
 
