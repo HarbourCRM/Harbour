@@ -526,8 +526,31 @@ th { background:#f5f5f5; }
 
       {% if selected_case %}
       <div class="section" style="display:flex; flex-direction:column; height:100%;">
-        <h3>Transactions</h3>
+      <h3>Financials</h3>
 
+        <div class="totals">
+          <div class="total-box">Invoices: {{ totals.Invoice|money }}</div>
+          <div class="total-box">Payments: {{ totals.Payment|money }}</div>
+          <div class="total-box">Charges: {{ totals.Charge|money }}</div>
+          <div class="total-box">Interest: {{ totals.Interest|money }}</div>
+        </div>
+        <div class="balance" style="text-align:center; color:{{ '#27ae60' if balance <= 0 else '#d00' }};">
+          BALANCE: {{ balance|money }}
+        </div>
+
+        <h3 style="margin-top:15px;">Transactions History</h3>
+
+        <div class="totals">
+          <div class="total-box">Invoices: {{ totals.Invoice|money }}</div>
+          <div class="total-box">Payments: {{ totals.Payment|money }}</div>
+          <div class="total-box">Charges: {{ totals.Charge|money }}</div>
+          <div class="total-box">Interest: {{ totals.Interest|money }}</div>
+        </div>
+        <div class="balance" style="text-align:center; color:{{ '#27ae60' if balance <= 0 else '#d00' }};">
+          BALANCE: {{ balance|money }}
+        </div>
+
+        
         
 <div class="add-bar-container">
   <form class="add-bar" action="{{ url_for('case.add_transaction') }}" method="post">
@@ -598,15 +621,8 @@ th { background:#f5f5f5; }
           {% endif %}
         </div>
         
-        <div class="totals">
-          <div class="total-box">Invoices: {{ totals.Invoice|money }}</div>
-          <div class="total-box">Payments: {{ totals.Payment|money }}</div>
-          <div class="total-box">Charges: {{ totals.Charge|money }}</div>
-          <div class="total-box">Interest: {{ totals.Interest|money }}</div>
-        </div>
-        <div class="balance" style="text-align:center; color:{{ '#27ae60' if balance <= 0 else '#d00' }};">
-          BALANCE: {{ balance|money }}
-        </div>
+
+        
       </div>
       {% endif %}
 
@@ -860,6 +876,7 @@ function openEditTransactionModal(id) {
 
 </body>
 </html>
+
 
 
 
