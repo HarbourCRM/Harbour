@@ -534,7 +534,7 @@ th { background:#f5f5f5; }
           <div class="total-box">Charges: {{ totals.Charge|money }}</div>
           <div class="total-box">Interest: {{ totals.Interest|money }}</div>
         </div>
-        <div class="balance" style="text-align:center; color:{{ '#27ae60' if balance <= 0 else '#d00' }};">
+        <div class="balance" style="text-align:center; margin-bottom: 25px; color: #000000;">
           BALANCE: {{ balance|money }}
 
         </div>
@@ -865,6 +865,7 @@ function openEditTransactionModal(id) {
 
 </body>
 </html>
+
 
 
 
